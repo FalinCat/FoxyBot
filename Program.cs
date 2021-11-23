@@ -50,11 +50,15 @@ namespace FoxyBot
                 .UseCommandService((context, config) =>
                 {
                     config.CaseSensitiveCommands = false;
-                    config.LogLevel = Discord.LogSeverity.Debug;
+                    config.LogLevel = LogSeverity.Debug;
                     config.DefaultRunMode = RunMode.Async;
                 })
                 .ConfigureServices((context, services) =>
                 {
+                    var lConf = new LavaConfig();
+                    lConf.Hostname = "lava.link";
+                    lConf.Port = 80;
+                    lConf.Authorization = "WGPPAAXZZASFASFSOJIYWWW";
                     services
                     .AddHostedService<CommandHandler>()
                     .AddLavaNode(x =>
@@ -62,7 +66,7 @@ namespace FoxyBot
                         x.SelfDeaf = true;
                     })
                     .AddSingleton<LavaNode>()
-                    .AddSingleton<LavaConfig>();
+                    .AddSingleton<LavaConfig>(lConf);
                 })
                 .UseConsoleLifetime();
 
