@@ -39,13 +39,6 @@ namespace FoxyBot.Services
             }
         }
 
-        private async Task OnTrackEnded(TrackEndedEventArgs args)
-        {
-
-
-
-        }
-
         public override async  Task InitializeAsync(CancellationToken cancellationToken)
         {
             _client.MessageReceived += OnMessageReceived;
