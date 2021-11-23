@@ -63,6 +63,7 @@ namespace FoxyBot.Modules
             {
                 var uri = new Uri(query);
                 query = HttpUtility.ParseQueryString(uri.Query).Get("v");
+
             }
 
 
