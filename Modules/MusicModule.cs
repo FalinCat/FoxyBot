@@ -62,11 +62,12 @@ namespace FoxyBot.Modules
             if (Uri.IsWellFormedUriString(query, UriKind.RelativeOrAbsolute))
             {
                 var uri = new Uri(query);
-                query = HttpUtility.ParseQueryString(uri.Query).Get("v");
-                if (query == null)
-                {
-                    query = uri.LocalPath.TrimEnd('/');
-                }
+
+                //var vidId = HttpUtility.ParseQueryString(uri.Query).Get("v");
+                //if (vidId == null)
+                //{
+                //    vidId = uri.LocalPath.TrimEnd('/');
+                //}
             }
 
 
