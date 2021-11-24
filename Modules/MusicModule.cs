@@ -454,6 +454,10 @@ namespace FoxyBot.Modules
                     message = "Рандом подкручен, признавайся! " + message;
                     await ReplyAsync(message);
                     return;
+                case falinId:
+                    message = "Мой повелитель, " + message;
+                    await ReplyAsync(message);
+                    return;
                 case duhotaId:
                     message = "Как то душно стало, " + message;
                     await ReplyAsync(message);
