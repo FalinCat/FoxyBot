@@ -1,1 +1,1 @@
-worker: dotnet ./FoxyBot.dll
+worker: dotnet run bin/Release/net6.0/linux-x64/FoxyBot.dll
