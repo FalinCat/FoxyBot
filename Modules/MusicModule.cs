@@ -36,7 +36,7 @@ np - что сейчас играет
         }
 
         [Command("np", RunMode = RunMode.Async)]
-        public async Task NowPlayingAsync([Remainder] string query)
+        public async Task NowPlayingAsync()
         {
             var player = _lavaNode.GetPlayer(Context.Guild);
 
