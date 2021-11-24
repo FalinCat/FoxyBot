@@ -1,1 +1,0 @@
-worker: dotnet run
