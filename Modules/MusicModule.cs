@@ -71,7 +71,7 @@ namespace FoxyBot.Modules
 
 
             var searchResponse = await _lavaNode.SearchYouTubeAsync(query);
-            var x = searchResponse.Tracks.FirstOrDefault();
+            //var x = searchResponse.Tracks.FirstOrDefault();
             
 
             if (searchResponse.Status == Victoria.Responses.Search.SearchStatus.LoadFailed ||
