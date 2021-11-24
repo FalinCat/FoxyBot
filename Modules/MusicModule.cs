@@ -58,11 +58,12 @@ namespace FoxyBot.Modules
                     await ReplyAsync(exception.Message);
                 }
             }
-
+            string trackId = String.Empty;
             if (Uri.IsWellFormedUriString(query, UriKind.RelativeOrAbsolute))
             {
                 var uri = new Uri(query);
-                query = HttpUtility.ParseQueryString(uri.Query).Get("v");
+                //query = HttpUtility.ParseQueryString(uri.Query).Get("v");
+                trackId = HttpUtility.ParseQueryString(uri.Query).Get("v");
                 if (query == null)
                 {
                     query = uri.LocalPath.TrimEnd('/');
@@ -71,8 +72,31 @@ namespace FoxyBot.Modules
 
 
             var searchResponse = await _lavaNode.SearchYouTubeAsync(query);
-            var x = searchResponse.Tracks.FirstOrDefault();
-            
+
+            LavaTrack track = null;
+
+            if (trackId != String.Empty)
+            {
+                foreach (var item in searchResponse.Tracks)
+                {
+                    if (trackId == item.Id)
+                    {
+                        track = item;
+                    }
+                }
+            }
+
+            if (track == null)
+            {
+                await ReplyAsync($"При поиске трека произошел фейл");
+                return;
+            }
+
+            //var x = searchResponse.Tracks.FirstOrDefault();
+
+
+
+
 
             if (searchResponse.Status == Victoria.Responses.Search.SearchStatus.LoadFailed ||
                 searchResponse.Status == Victoria.Responses.Search.SearchStatus.NoMatches)
@@ -87,24 +111,22 @@ namespace FoxyBot.Modules
             {
                 if (!string.IsNullOrWhiteSpace(searchResponse.Playlist.Name))
                 {
-                    foreach (var track in searchResponse.Tracks)
+                    foreach (var item in searchResponse.Tracks)
                     {
-                        player.Queue.Enqueue(track);
+                        player.Queue.Enqueue(item);
                     }
 
                     await ReplyAsync($"В очередь добавлено {searchResponse.Tracks.Count} треков");
                 }
                 else
                 {
-                    var track = searchResponse.Tracks.First();
+                    //var track = searchResponse.Tracks.First();
                     player.Queue.Enqueue(track);
                     await ReplyAsync($"Добавлено в очередь: **{track.Title}**");
                 }
             }
             else
             {
-                var track = searchResponse.Tracks.First();
-
                 if (!string.IsNullOrWhiteSpace(searchResponse.Playlist.Name))
                 {
                     for (var i = 0; i < searchResponse.Tracks.Count; i++)
@@ -249,7 +271,8 @@ namespace FoxyBot.Modules
             }
 
             var player = _lavaNode.GetPlayer(Context.Guild);
-            if (voiceState.VoiceChannel != player.VoiceChannel) {
+            if (voiceState.VoiceChannel != player.VoiceChannel)
+            {
                 await ReplyAsync("Бот находится не в ващем текущем голосовом канале");
                 return;
             }
@@ -277,7 +300,7 @@ namespace FoxyBot.Modules
                     await ReplyAsync(queue);
                 }
             }
-            
+
 
         }
 
