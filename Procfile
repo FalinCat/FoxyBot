@@ -1,1 +1,1 @@
-worker: cd $HOME/heroku_output/Worker && dotnet ./FoxyBot.dll
+worker: dotnet ./FoxyBot.dll
