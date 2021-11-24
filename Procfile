@@ -1,0 +1,1 @@
+﻿worker: cd $HOME/heroku_output/Worker && dotnet ./Worker.dll

@@ -65,7 +65,7 @@ namespace FoxyBot.Modules
                 query = HttpUtility.ParseQueryString(uri.Query).Get("v");
                 if (query == null)
                 {
-                    query = uri.LocalPath;
+                    query = uri.LocalPath.TrimEnd('/');
                 }
             }
 
