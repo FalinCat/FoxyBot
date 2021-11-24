@@ -21,6 +21,12 @@ namespace FoxyBot.Modules
             _lavaNode = lavaNode;
         }
 
+        [Command("s", RunMode = RunMode.Async)]
+        public async Task SearchAsyncCut([Remainder] string query)
+        {
+            await SearchAsync(query);
+        }
+
         [Command("Search", RunMode = RunMode.Async)]
         public async Task SearchAsync([Remainder] string query)
         {
@@ -82,6 +88,11 @@ namespace FoxyBot.Modules
             await ReplyAsyncWithCheck(str.ToString());
         }
 
+        [Command("P", RunMode = RunMode.Async)]
+        public async Task PlayAsyncCut([Remainder] string query)
+        {
+            await PlayAsync(query);
+        }
 
         [Command("Play", RunMode = RunMode.Async)]
         public async Task PlayAsync([Remainder] string query)
@@ -175,24 +186,27 @@ namespace FoxyBot.Modules
 
 
             var searchResponse = await _lavaNode.SearchYouTubeAsync(query);
-            if (searchResponse.Status == Victoria.Responses.Search.SearchStatus.LoadFailed ||
-                searchResponse.Status == Victoria.Responses.Search.SearchStatus.NoMatches)
+            if ((searchResponse.Status == Victoria.Responses.Search.SearchStatus.LoadFailed ||
+                searchResponse.Status == Victoria.Responses.Search.SearchStatus.NoMatches) &&
+                !Uri.IsWellFormedUriString(query, UriKind.Absolute))
             {
                 await ReplyAsyncWithCheck($"Ничего не найдено по запросу `{query}`.");
                 return;
             }
 
-            LavaTrack foundedTrack = searchResponse.Tracks.First();
+            LavaTrack? foundedTrack = searchResponse.Tracks.FirstOrDefault();
             if (Uri.IsWellFormedUriString(query, UriKind.Absolute))
             {
+
                 var uri = new Uri(query);
                 var vidId = HttpUtility.ParseQueryString(uri.Query).Get("v");
 
                 if (vidId == null)
                 {
-                    vidId = uri.LocalPath.Trim('/');
+                    vidId = uri.LocalPath.Trim('/').Split('?')[0];
                 }
 
+                searchResponse = await _lavaNode.SearchYouTubeAsync(vidId);
                 foundedTrack = searchResponse.Tracks.FirstOrDefault(x => x.Id == vidId);
                 if (foundedTrack == null)
                 {
@@ -217,7 +231,7 @@ namespace FoxyBot.Modules
                 {
                     //var track = searchResponse.Tracks.First();
                     player.Queue.Enqueue(foundedTrack);
-                    await ReplyAsyncWithCheck($"Добавлено в очередь: **{foundedTrack.Title}**");
+                    await ReplyAsyncWithCheck($"Добавлено в очередь: **{foundedTrack?.Title}**");
                 }
             }
             else
@@ -231,7 +245,7 @@ namespace FoxyBot.Modules
                         if (i == 0)
                         {
                             await player.PlayAsync(foundedTrack);
-                            await ReplyAsyncWithCheck($"Сейчас играет: {foundedTrack.Title}");
+                            await ReplyAsyncWithCheck($"Сейчас играет: {foundedTrack?.Title}");
                         }
                         else
                         {
@@ -244,7 +258,7 @@ namespace FoxyBot.Modules
                 else
                 {
                     await player.PlayAsync(foundedTrack);
-                    await ReplyAsyncWithCheck($"Сейчас играет: **{foundedTrack.Title}**");
+                    await ReplyAsyncWithCheck($"Сейчас играет: **{foundedTrack?.Title}**");
                 }
             }
 
@@ -394,8 +408,21 @@ namespace FoxyBot.Modules
             {
                 if (player.Queue.Count != 0)
                 {
-                    var queue = "Будущие треки:" + Environment.NewLine + String.Join(Environment.NewLine, player.Queue.Select(x => x.Title));
-                    await ReplyAsyncWithCheck(queue);
+                    var str = new StringBuilder();
+                    str.AppendLine("Треки в очереди:");
+                    for (int i = 0; i < player.Queue.Count; i++)
+                    {
+                        str.AppendLine($"{i} - {player.Queue.ElementAt(i).Title} [{new DateTime(player.Queue.ElementAt(i).Duration.Ticks):HH:mm:ss}]");
+                    }
+                    //var totalTime = player.Queue.Sum(x => x.Duration.Ticks);
+                    var totalTime = player.Queue.Aggregate
+                (TimeSpan.Zero,
+                (sumSoFar, nextMyObject) => sumSoFar + nextMyObject.Duration);
+
+                    str.AppendLine("Всего времени плейлиста: " + new DateTime(totalTime.Ticks).ToString("HH:mm:ss"));
+
+                    //var queue = "Будущие треки:" + Environment.NewLine + String.Join(Environment.NewLine, player.Queue.Select(x => x.Title));
+                    await ReplyAsyncWithCheck(str.ToString());
                 }
             }
 
@@ -412,62 +439,91 @@ namespace FoxyBot.Modules
             const ulong meddoId = 126401338945961985;
             const ulong trimarId = 268034213838716929;
             const ulong badfraggId = 913053197239726140;
-            const ulong duhotaId = 303207860576321536;
             const ulong kidneyId = 303947320905695233;
             const ulong falcaId = 638834185167175683;
+            const ulong jutaId = 499651025494474752;
+            const ulong elengelId = 378243330573598760;
 
+
+            var jokesList = new List<string>();
+            var random = new Random();
             switch (Context.User.Id)
             {
                 case vladId:
-                    message = "Кста, " + message;
-                    await ReplyAsync(message);
-                    return;
+                    jokesList.Add("Кста, ");
+                    jokesList.Add("Владдудос, ");
+                    jokesList.Add("Где третий ГС? ");
+                    jokesList.Add("Продам пейран, кста! ");
+                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
+                    break;
                 case oxyId:
-                    message = "Пипец на холодец! " + message;
-                    await ReplyAsync(message);
-                    return;
+                    jokesList.Add("Пипец на холодец! ");
+                    jokesList.Add("Мяяяя.... ");
+                    jokesList.Add("Я надеюсь ты сейчас в шоколадном бубличке? ");
+                    jokesList.Add("Простите, ");
+                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
+                    break;
                 case ozmaId:
-                    message = "Трында! " + message;
-                    await ReplyAsync(message);
-                    return;
+                    jokesList.Add("Трында! ");
+                    jokesList.Add("Фыр-фыр-фыр... ");
+                    jokesList.Add("Ваше Лисичество, ");
+                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
+                    break;
                 case juibId:
-                    message = "Леонид Кагутин, " + message;
-                    await ReplyAsync(message);
-                    return;
+                    jokesList.Add("Леонид Кагутин, ");
+                    jokesList.Add("ММ лагает? ");
+                    jokesList.Add("Леонид Кагутин, продажи уже просчитались? ");
+                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
+                    break;
                 case meddoId:
-                    message = "Чё началось-то? " + message;
-                    await ReplyAsync(message);
-                    return;
+                    jokesList.Add("Чё началось-то? ");
+                    jokesList.Add("Бот застрял. ");
+                    jokesList.Add("Оно поломалось... ");
+                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
+                    break;
                 case trimarId:
-                    message = "30 золотых монет " + message;
-                    await ReplyAsync(message);
-                    return;
+                    jokesList.Add("За Гомеза! ");
+                    jokesList.Add("Вот мои 30 золотых монет. ");
+                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
+                    break;
                 case badfraggId:
-                    message = "Отдай, " + message;
-                    await ReplyAsync(message);
-                    return;
+                    jokesList.Add("Отдай, ");
+                    jokesList.Add("Ваше преступление фотофиксируется. ");
+                    jokesList.Add("Вас ждут в Жабском суде! ");
+                    jokesList.Add("Вас ждут в Гаагском суде! ");
+                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
+                    break;
                 case falcaId:
-                    message = "Ништяяяк... " + message;
-                    await ReplyAsync(message);
-                    return;
+                    jokesList.Add("Ништяяяк... ");
+                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
+                    break;
                 case kidneyId:
-                    message = "Рандом подкручен, признавайся! " + message;
-                    await ReplyAsync(message);
-                    return;
+                    jokesList.Add("Рандом подкручен, признавайся! ");
+                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
+                    break;
                 case falinId:
-                    message = "Мой повелитель, " + message;
-                    await ReplyAsync(message);
-                    return;
-                case duhotaId:
-                    message = "Как то душно стало, " + message;
-                    await ReplyAsync(message);
-                    return;
+                    jokesList.Add("Мой создатель, ");
+                    jokesList.Add("Мой повелитель, ");
+                    jokesList.Add("Милорд, ");
+                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
+                    break;
+                case jutaId:
+                    jokesList.Add("Ели мясо оборотнИ, пивом запивали! ");
+                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
+                    break;
+                case elengelId:
+                    jokesList.Add("Шестизначный дипс, кста. ");
+                    jokesList.Add("Батла неоптимизирована =) ");
+                    jokesList.Add("Это уже какая бутылочка коньяка? ");
+                    jokesList.Add("Го винишка? ");
+                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
+                    break;
                 default:
+                    await ReplyAsync(message);
                     break;
             }
-            await ReplyAsync(message);
-        }
 
+        }
     }
 
 
