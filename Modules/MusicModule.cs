@@ -21,6 +21,31 @@ namespace FoxyBot.Modules
             _lavaNode = lavaNode;
         }
 
+        [Command("help", RunMode = RunMode.Async)]
+        public async Task SearchAsyncCut()
+        {
+            await ReplyAsyncWithCheck(@"
+play - p - поиск на ютубе
+pause - пауза
+resume - продолжить
+stop - остановить
+skip - пропустить
+search - s - поиск. После получения списка писать команду $play N где N - номер трека из списка (иногда ютуб решает поменять местами треки в результате и надо еще раз сделать $search)
+np - что сейчас играет
+");
+        }
+
+        [Command("np", RunMode = RunMode.Async)]
+        public async Task NowPlayingAsync([Remainder] string query)
+        {
+            var player = _lavaNode.GetPlayer(Context.Guild);
+
+            var str = new StringBuilder();
+            str.AppendLine(player.Track.Title);
+            str.AppendLine("Текущая позиция:" + new DateTime(player.Track.Position.Ticks).ToString("HH:mm:ss"));
+            await ReplyAsyncWithCheck(str.ToString());
+        }
+
         [Command("s", RunMode = RunMode.Async)]
         public async Task SearchAsyncCut([Remainder] string query)
         {
