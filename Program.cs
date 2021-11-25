@@ -60,6 +60,9 @@ namespace FoxyBot
                     lConf.Hostname = "lava.link";
                     lConf.Port = 80;
                     lConf.Authorization = "WGPPAAXZZASFASFSOJIYWWW";
+                    lConf.ReconnectAttempts = 5;
+                    lConf.EnableResume = true;
+                    lConf.ReconnectDelay = TimeSpan.FromSeconds(5);
                     services
                     .AddHostedService<CommandHandler>()
                     .AddLavaNode(x =>
