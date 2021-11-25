@@ -139,37 +139,36 @@ kick - пнуть бота нафиг из канала, также пнуть �
                 return;
             }
 
-            //if (!_lavaNode.HasPlayer(Context.Guild))
-            //{
             var voiceState = Context.User as IVoiceState;
-            if (_lavaNode.HasPlayer(Context.Guild))
+
+            //var botChannel = _lavaNode.GetPlayer(Context.Guild).VoiceChannel;
+            ;
+
+            if (_lavaNode.TryGetPlayer(Context.Guild, out var botChannel) && (botChannel != voiceState?.VoiceChannel))
             {
-                if (_lavaNode.GetPlayer(Context.Guild).VoiceChannel != voiceState?.VoiceChannel)
-                {
-                    await ReplyAsyncWithCheck("Бот уже находится в голосовом канале " + _lavaNode.GetPlayer(Context.Guild).VoiceChannel.Name);
-                    return;
-                }
-
-
-            }
-
-
-            if (voiceState?.VoiceChannel == null)
-            {
-                await ReplyAsyncWithCheck("Необходимо находиться в голосовом канале!");
+                await ReplyAsyncWithCheck("Бот уже находится в голосовом канале: " + _lavaNode.GetPlayer(Context.Guild).VoiceChannel.Name);
                 return;
             }
 
-            try
+            var check = _lavaNode.HasPlayer(Context.Guild);
+            if (!_lavaNode.HasPlayer(Context.Guild))
             {
-                await _lavaNode.JoinAsync(voiceState.VoiceChannel, Context.Channel as ITextChannel);
-                //await ReplyAsync($"Joined {voiceState.VoiceChannel.Name}!");
+                if (voiceState?.VoiceChannel == null)
+                {
+                    await ReplyAsyncWithCheck("Необходимо находиться в голосовом канале!");
+                    return;
+                }
+
+                try
+                {
+                    await _lavaNode.JoinAsync(voiceState.VoiceChannel, Context.Channel as ITextChannel);
+                    //await ReplyAsync($"Joined {voiceState.VoiceChannel.Name}!");
+                }
+                catch (Exception exception)
+                {
+                    await ReplyAsyncWithCheck(exception.Message);
+                }
             }
-            catch (Exception exception)
-            {
-                await ReplyAsyncWithCheck(exception.Message);
-            }
-            //}
 
 
 
