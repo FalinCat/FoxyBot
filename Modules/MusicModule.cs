@@ -454,11 +454,14 @@ np - что сейчас играет
             const ulong juibId = 391341859466772480;
             const ulong meddoId = 126401338945961985;
             const ulong trimarId = 268034213838716929;
-            const ulong badfraggId = 913053197239726140;
+            const ulong badfraggId = 383160191899795457; 
             const ulong kidneyId = 303947320905695233;
             const ulong falcaId = 638834185167175683;
             const ulong jutaId = 499651025494474752;
             const ulong elengelId = 378243330573598760;
+            const ulong sovaId = 169892911301787648;
+            const ulong elizabethId = 256798937095208960;
+            const ulong minorisId = 377851183479390208;
 
 
             var jokesList = new List<string>();
@@ -469,7 +472,8 @@ np - что сейчас играет
                     jokesList.Add("Кста, ");
                     jokesList.Add("Владдудос, ");
                     jokesList.Add("Где третий ГС? ");
-                    jokesList.Add("Продам пейран, кста!");
+                    jokesList.Add("Продам пейран, кста! ");
+                    jokesList.Add("Найс демедж,найс баланс! ");
                     await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
                 case oxyId:
@@ -477,9 +481,15 @@ np - что сейчас играет
                     jokesList.Add("Мяяяя.... ");
                     jokesList.Add("Я надеюсь ты сейчас в шоколадном бубличке? ");
                     jokesList.Add("Простите, ");
+                    jokesList.Add("Вивинг эвэрэйдж, ");
+                    jokesList.Add("Жаренные булочки? ");
                     if (DateTime.Now.Hour > 20)
                     {
                         jokesList.Add("Не ем после шести!!! ");
+                    }
+                    if (DateTime.Now.Hour > 22)
+                    {
+                        jokesList.Add("Окси, иди спать! ");
                     }
                     await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
@@ -487,12 +497,22 @@ np - что сейчас играет
                     jokesList.Add("Трында! ");
                     jokesList.Add("Фыр-фыр-фыр... ");
                     jokesList.Add("Ваше Лисичество, ");
+                    jokesList.Add("Опять спекаться в хила? ");
+                    jokesList.Add("Опять спекаться с хила? ");
+                    jokesList.Add("Погоди, сейчас переспекаюсь в хила... ");
+                    if (DateTime.Now.Hour < 9)
+                    {
+                        jokesList.Add("Так рано не спишь, все окей? ");
+                    }
                     await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
                 case juibId:
                     jokesList.Add("Леонид Кагутин, ");
-                    jokesList.Add("ММ лагает? ");
+                    jokesList.Add("ММ сегодня не лагает? ");
                     jokesList.Add("Леонид Кагутин, продажи уже просчитались? ");
+                    jokesList.Add("Погоди, у меня место в сумке закончилось... ");
+                    jokesList.Add("Погоди, у меня место в очереди закончилось... ");
+                    jokesList.Add("Релеквин не трогай! (оба) ");
                     await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
                 case meddoId:
@@ -521,6 +541,8 @@ np - что сейчас играет
                     break;
                 case kidneyId:
                     jokesList.Add("Рандом подкручен, признавайся! ");
+                    jokesList.Add("35/36 ");
+                    jokesList.Add("Сегодня будем бомбить? ");
                     await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
                 case falinId:
@@ -530,7 +552,7 @@ np - что сейчас играет
                     await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
                 case jutaId:
-                    jokesList.Add("Ели мясо оборотнИ, пивом запивали! ");
+                    jokesList.Add("Ели мясо оборотнИ, амброзией запивали! ");
                     await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
                 case elengelId:
@@ -538,6 +560,22 @@ np - что сейчас играет
                     jokesList.Add("Батла неоптимизирована =) ");
                     jokesList.Add("Это уже какая бутылочка коньяка? ");
                     jokesList.Add("Го винишка? ");
+                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
+                    break;
+                case sovaId:
+                    jokesList.Add("Совень, забери!!! ");
+                    jokesList.Add("Пора менять сим-карту? ");
+                    jokesList.Add("Пора дипсить! ");
+                    jokesList.Add("Пора переходить на 3g ");
+                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
+                    break;
+                case elizabethId:
+                    jokesList.Add("Если есть в кармане пачка... Ой, простите ");
+                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
+                    break;
+                case minorisId:
+                    jokesList.Add("Пора править график? ");
+                    jokesList.Add("Ту-ту-ру ");
                     await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
                 default:
