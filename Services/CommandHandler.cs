@@ -44,35 +44,49 @@ namespace FoxyBot.Services
             _client.MessageReceived += OnMessageReceived;
             _client.Ready += Client_Ready;
             _lavaNode.OnTrackEnded += _lavaNode_OnTrackEnded;
+            _lavaNode.OnTrackException += _lavaNode_OnTrackException;
             //_lavaNode.OnTrackStarted += _lavaNode_OnTrackStarted;
             await _service.AddModulesAsync(Assembly.GetEntryAssembly(), _provider);
             
 
         }
 
-        //private async Task _lavaNode_DisconnectOnTimeoutAsync(TrackStartEventArgs arg)
-        //{
-        //    arg.Player.VoiceChannel.DisconnectAsync();
-        //}
-
-        //private async Task _lavaNode_OnTrackStarted(TrackStartEventArgs arg)
-        //{
-        //    CancellationTokenSource cts = new CancellationTokenSource();
-        //    CancellationToken token = cts.Token;
-
-
-        //}
+        private async Task _lavaNode_OnTrackException(TrackExceptionEventArgs arg)
+        {
+            //arg.Player.Queue.Enqueue(arg.Track);
+            
+            //await arg.Player.TextChannel?.SendMessageAsync($"{arg.Track.Title} вызвала ошибку {arg.Exception} и  я добавил ее опять в очередь");
+        }
 
         private async Task _lavaNode_OnTrackEnded(TrackEndedEventArgs arg)
         {
             var player = arg.Player;
-            if (player.Track == null)
+
+            if (player.PlayerState == Victoria.Enums.PlayerState.Stopped)
             {
-                await player.TextChannel.SendMessageAsync("В очереди не осталось треков");
-                await _lavaNode.LeaveAsync(player.VoiceChannel);
+                if (!player.Queue.TryDequeue(out var queueable))
+                {
+                    await player.TextChannel.SendMessageAsync("В очереди не осталось треков");
+                    await _lavaNode.LeaveAsync(player.VoiceChannel);
+                    return;
+                }
+                if (!(queueable is LavaTrack track))
+                {
+                    await player.TextChannel.SendMessageAsync("Как то так произошло, что следующий трек в очереди - не трек");
+                    return;
+                }
+
+                await arg.Player.PlayAsync(track);
+                await arg.Player.TextChannel.SendMessageAsync($"{arg.Reason} -> {arg.Track.Title}" + Environment.NewLine + 
+                    $"Сейчас играет: {track.Title} <{track.Url}>");
             }
 
-            //var player = arg.Player;
+            //if (player.Track == null)
+            //{
+            //    //await player.TextChannel.SendMessageAsync("В очереди не осталось треков");
+            //    //await _lavaNode.LeaveAsync(player.VoiceChannel);
+            //}
+
             //if (!player.Queue.TryDequeue(out var queueable))
             //{
             //    await player.TextChannel.SendMessageAsync("В очереди не осталось треков");
