@@ -130,8 +130,6 @@ kick - пнуть бота нафиг из канала, также пнуть �
         [Command("Play", RunMode = RunMode.Async)]
         public async Task PlayAsync([Remainder] string query)
         {
-            //var search = await _lavaNode.SearchAsync(Victoria.Responses.Search.SearchType.Direct, query);
-
             var origQuery = query;
             if (string.IsNullOrWhiteSpace(query))
             {
@@ -147,8 +145,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
             if (_lavaNode.TryGetPlayer(Context.Guild, out var botChannel) && (botChannel.VoiceChannel.Id != voiceState?.VoiceChannel.Id))
             {
                 await ReplyAsyncWithCheck("Бот уже находится в голосовом канале: " + _lavaNode.GetPlayer(Context.Guild).VoiceChannel.Name + 
-                    "а вы в канале - " + voiceState?.VoiceChannel);
-
+                    ", а вы в канале - " + voiceState?.VoiceChannel);
                 return;
             }
 
@@ -530,7 +527,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
             player.Queue.Clear();
             await player.StopAsync();
             await voiceState.VoiceChannel.DisconnectAsync();
-            await ReplyAsyncWithCheck("Эх, прямо в копчик");
+            await ReplyAsyncWithCheck("Бот получил пинок под зад и удалился");
 
         }
 

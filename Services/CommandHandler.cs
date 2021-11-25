@@ -53,9 +53,8 @@ namespace FoxyBot.Services
 
         private async Task _lavaNode_OnTrackException(TrackExceptionEventArgs arg)
         {
-            //arg.Player.Queue.Enqueue(arg.Track);
-            
-            //await arg.Player.TextChannel?.SendMessageAsync($"{arg.Track.Title} вызвала ошибку {arg.Exception} и  я добавил ее опять в очередь");
+            await arg.Player.PlayAsync(arg.Track);            
+            await arg.Player.TextChannel.SendMessageAsync($"{arg.Track.Title} вызвала ошибку {arg.Exception} и я добавил ее опять");
         }
 
         private async Task _lavaNode_OnTrackEnded(TrackEndedEventArgs arg)
