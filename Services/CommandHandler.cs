@@ -66,22 +66,29 @@ namespace FoxyBot.Services
         private async Task _lavaNode_OnTrackEnded(TrackEndedEventArgs arg)
         {
             var player = arg.Player;
-            if (!player.Queue.TryDequeue(out var queueable))
+            if (player.Track == null)
             {
                 await player.TextChannel.SendMessageAsync("В очереди не осталось треков");
                 await _lavaNode.LeaveAsync(player.VoiceChannel);
-                return;
             }
 
-            if (!(queueable is LavaTrack track))
-            {
-                await player.TextChannel.SendMessageAsync("Как то так произошло, что следующий трек в очереди - не трек");
-                return;
-            }
+            //var player = arg.Player;
+            //if (!player.Queue.TryDequeue(out var queueable))
+            //{
+            //    await player.TextChannel.SendMessageAsync("В очереди не осталось треков");
+            //    await _lavaNode.LeaveAsync(player.VoiceChannel);
+            //    return;
+            //}
 
-            await arg.Player.PlayAsync(track);
-            await arg.Player.TextChannel.SendMessageAsync(
-                $"{arg.Reason}: {arg.Track.Title}\nСейчас играет: {track.Title}");
+            //if (!(queueable is LavaTrack track))
+            //{
+            //    await player.TextChannel.SendMessageAsync("Как то так произошло, что следующий трек в очереди - не трек");
+            //    return;
+            //}
+
+            //await arg.Player.PlayAsync(track);
+            //await arg.Player.TextChannel.SendMessageAsync(
+            //    $"{arg.Reason}: {arg.Track.Title}\nСейчас играет: {track.Title}");
         }
 
         private async Task OnMessageReceived(SocketMessage socketMessage)
