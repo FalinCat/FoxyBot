@@ -341,6 +341,7 @@ np - что сейчас играет
                 return;
             }
 
+            player.Queue.Clear();
             await player.StopAsync();
         }
 

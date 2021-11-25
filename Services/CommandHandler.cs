@@ -62,7 +62,7 @@ namespace FoxyBot.Services
         {
             var player = arg.Player;
 
-            if (player.PlayerState == Victoria.Enums.PlayerState.Stopped)
+            if (player.PlayerState == Victoria.Enums.PlayerState.Stopped && player.Queue.Count > 0)
             {
                 if (!player.Queue.TryDequeue(out var queueable))
                 {
@@ -80,29 +80,6 @@ namespace FoxyBot.Services
                 await arg.Player.TextChannel.SendMessageAsync($"{arg.Reason} -> {arg.Track.Title}" + Environment.NewLine + 
                     $"Сейчас играет: {track.Title} <{track.Url}>");
             }
-
-            //if (player.Track == null)
-            //{
-            //    //await player.TextChannel.SendMessageAsync("В очереди не осталось треков");
-            //    //await _lavaNode.LeaveAsync(player.VoiceChannel);
-            //}
-
-            //if (!player.Queue.TryDequeue(out var queueable))
-            //{
-            //    await player.TextChannel.SendMessageAsync("В очереди не осталось треков");
-            //    await _lavaNode.LeaveAsync(player.VoiceChannel);
-            //    return;
-            //}
-
-            //if (!(queueable is LavaTrack track))
-            //{
-            //    await player.TextChannel.SendMessageAsync("Как то так произошло, что следующий трек в очереди - не трек");
-            //    return;
-            //}
-
-            //await arg.Player.PlayAsync(track);
-            //await arg.Player.TextChannel.SendMessageAsync(
-            //    $"{arg.Reason}: {arg.Track.Title}\nСейчас играет: {track.Title}");
         }
 
         private async Task OnMessageReceived(SocketMessage socketMessage)
