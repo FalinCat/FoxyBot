@@ -80,6 +80,11 @@ namespace FoxyBot.Services
                 await arg.Player.TextChannel.SendMessageAsync($"{arg.Reason} -> {arg.Track.Title}" + Environment.NewLine + 
                     $"Сейчас играет: {track.Title} <{track.Url}>");
             }
+            else
+            {
+                await player.TextChannel.SendMessageAsync("В очереди не осталось треков");
+                await arg.Player.VoiceChannel.DisconnectAsync();
+            }
         }
 
         private async Task OnMessageReceived(SocketMessage socketMessage)

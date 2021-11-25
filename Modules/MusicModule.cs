@@ -33,6 +33,7 @@ skip - пропустить
 search - s - поиск. После получения списка писать команду $play N где N - номер трека из списка (иногда ютуб решает поменять местами треки в результате и надо еще раз сделать $search)
 q - посмотреть очередь
 np - что сейчас играет
+kick - пнуть бота нафиг из канала, также пнуть если он завис
 ");
         }
 
@@ -138,13 +139,11 @@ np - что сейчас играет
                 return;
             }
 
-
-
-            if (!_lavaNode.HasPlayer(Context.Guild))
-            {
+            //if (!_lavaNode.HasPlayer(Context.Guild))
+            //{
                 if (_lavaNode.HasPlayer(Context.Guild))
                 {
-                    await ReplyAsyncWithCheck("Бот уже находится в голосовом канале");
+                    await ReplyAsyncWithCheck("Бот уже находится в голосовом канале " + _lavaNode.GetPlayer(Context.Guild).VoiceChannel.Name);
                     return;
                 }
 
@@ -164,7 +163,12 @@ np - что сейчас играет
                 {
                     await ReplyAsyncWithCheck(exception.Message);
                 }
-            }
+            //}
+
+
+
+
+
 
 
 
@@ -201,9 +205,6 @@ np - что сейчас играет
                 }
             }
 
-            //https://youtu.be/rk6zxV0Z4Xk?list=PLlvCpedNZ4rjUjeZpyJF5i0Yn4EP9589T
-            //https://www.youtube.com/watch?v=rk6zxV0Z4Xk&list=PLlvCpedNZ4rjUjeZpyJF5i0Yn4EP9589T &index=3
-
             Victoria.Responses.Search.SearchResponse searchResponse;
             int index = -1;
             if (query.Contains("list="))
@@ -218,7 +219,7 @@ np - что сейчас играет
 
                 searchResponse = await _lavaNode.SearchAsync(Victoria.Responses.Search.SearchType.Direct, str);
             }
-            else if (query.Contains("https://music.youtube.com"))
+            else if (origQuery.Contains("https://music.youtube.com"))
             {
                 searchResponse = await _lavaNode.SearchAsync(Victoria.Responses.Search.SearchType.Direct, origQuery);
             }
@@ -343,6 +344,7 @@ np - что сейчас играет
 
             player.Queue.Clear();
             await player.StopAsync();
+            await voiceState.VoiceChannel.DisconnectAsync();
         }
 
         [Command("Pause", RunMode = RunMode.Async)]
@@ -449,8 +451,6 @@ np - что сейчас играет
         [Command("q", RunMode = RunMode.Async)]
         public async Task GetQueueAsync()
         {
-            //var player = _lavaNode.GetPlayer(Context.Guild);
-            //var player1 = ;
             if (_lavaNode.TryGetPlayer(Context.Guild, out LavaPlayer? player))
             {
                 if (player.Track != null || player.Queue.Count != 0)
@@ -493,6 +493,37 @@ np - что сейчас играет
                 }
             }
 
+
+        }
+
+
+        [Command("Kick", RunMode = RunMode.Async)]
+        private async Task KickAsync()
+        {
+            var player = _lavaNode.GetPlayer(Context.Guild);
+
+            var voiceState = Context.User as IVoiceState;
+            if (voiceState?.VoiceChannel == null)
+            {
+                await ReplyAsyncWithCheck("Вы должны быть в голосовом канале");
+                return;
+            }
+
+            if (!_lavaNode.HasPlayer(Context.Guild))
+            {
+                await ReplyAsyncWithCheck("Бот уже не в голосовм канале");
+                return;
+            }
+
+            if (voiceState.VoiceChannel != player.VoiceChannel)
+            {
+                await ReplyAsyncWithCheck("Бот находится не в ващем текущем голосовом канале");
+                return;
+            }
+            player.Queue.Clear();
+            await player.StopAsync();
+            await voiceState.VoiceChannel.DisconnectAsync();
+            await ReplyAsyncWithCheck("Эх, прямо в копчик");
 
         }
 
