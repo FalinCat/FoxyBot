@@ -31,6 +31,7 @@ resume - продолжить
 stop - остановить
 skip - пропустить
 search - s - поиск. После получения списка писать команду $play N где N - номер трека из списка (иногда ютуб решает поменять местами треки в результате и надо еще раз сделать $search)
+q - посмотреть очередь
 np - что сейчас играет
 ");
         }
@@ -41,9 +42,15 @@ np - что сейчас играет
             var player = _lavaNode.GetPlayer(Context.Guild);
 
             var str = new StringBuilder();
-            str.AppendLine(player.Track.Title);
-            str.AppendLine("Текущая позиция:" + new DateTime(player.Track.Position.Ticks).ToString("HH:mm:ss"));
+            str.Append($"[{player.Track.Title}]<{player.Track.Url}>");
+            str.AppendLine($" - [{new DateTime(player.Track.Position.Ticks).ToString("HH:mm:ss")}]" + 
+                $"/[{new DateTime(player.Track.Duration.Ticks).ToString("HH:mm:ss")}]");
+            //str.AppendLine(player.Track.Url);
             await ReplyAsyncWithCheck(str.ToString());
+
+            
+
+            //await ReplyAsync("", false, );
         }
 
         [Command("s", RunMode = RunMode.Async)]
@@ -156,84 +163,66 @@ np - что сейчас играет
                 }
             }
 
+            
+
 
             int number = -1;
             if (int.TryParse(query, out number))
             {
-                var messages = Context.Channel.GetCachedMessages(3);
-
-                string searchString = "";
-
-                //messages.FirstOrDefault(message => message.Content.ToLower().Contains(searchString));
+                var messages = Context.Channel.GetCachedMessages(10);
 
                 foreach (var message in messages)
                 {
                     if (message.Content.ToLower().Contains("$search"))
                     {
-                        searchString = message.Content.TrimStart("$search".ToCharArray());
+                        query = message.Content.TrimStart("$search".ToCharArray());
                         break;
                     }
                 }
-
-                var sResponce = await _lavaNode.SearchYouTubeAsync(searchString);
-                var track = sResponce.Tracks.ElementAtOrDefault(number);
-                if (track != null)
-                {
-                    var plr = _lavaNode.GetPlayer(Context.Guild);
-
-                    if (plr.PlayerState == PlayerState.Playing || plr.PlayerState == PlayerState.Paused)
-                    {
-                        plr.Queue.Enqueue(track);
-                        await ReplyAsyncWithCheck($"Добавлено в очередь: **{track.Title}**");
-                    }
-                    else
-                    {
-                        await plr.PlayAsync(track);
-                        await ReplyAsyncWithCheck($"Сейчас играет: **{track.Title}**");
-                    }
-                    return;
-                }
-                else
-                {
-                    await ReplyAsyncWithCheck($"По неведомой причине найти трек не удалось");
-                }
-
-                return;
+            }
+            else { 
+                number = -1;
             }
 
-
-
-            //query = query.Split('\n')[0];
+            string vidId = null;
             if (query.Contains("youtu.be") || query.Contains("youtube.com"))
             {
-                query = query.Split(' ')[0];
-            }
-
-
-            var searchResponse = await _lavaNode.SearchYouTubeAsync(query);
-            if ((searchResponse.Status == Victoria.Responses.Search.SearchStatus.LoadFailed ||
-                searchResponse.Status == Victoria.Responses.Search.SearchStatus.NoMatches) &&
-                !Uri.IsWellFormedUriString(query, UriKind.Absolute))
-            {
-                await ReplyAsyncWithCheck($"Ничего не найдено по запросу `{query}`.");
-                return;
-            }
-
-            LavaTrack? foundedTrack = searchResponse.Tracks.FirstOrDefault();
-            if (Uri.IsWellFormedUriString(query, UriKind.Absolute))
-            {
-
+                query = query.Split(' ')[0].Replace("https://music.", "https://").Replace("&feature=share", "");
                 var uri = new Uri(query);
-                var vidId = HttpUtility.ParseQueryString(uri.Query).Get("v");
+                vidId = HttpUtility.ParseQueryString(uri.Query).Get("v");
 
                 if (vidId == null)
                 {
                     vidId = uri.LocalPath.Trim('/').Split('?')[0];
                 }
+            }
 
-                searchResponse = await _lavaNode.SearchYouTubeAsync(vidId);
-                foundedTrack = searchResponse.Tracks.FirstOrDefault(x => x.Id == vidId);
-                if (foundedTrack == null)
+            var searchResponse = await _lavaNode.SearchYouTubeAsync(query);
+            LavaTrack track = null;
+            if ((searchResponse.Status == Victoria.Responses.Search.SearchStatus.LoadFailed ||
+                searchResponse.Status == Victoria.Responses.Search.SearchStatus.NoMatches))
+            {
+                await ReplyAsyncWithCheck($"Ничего не найдено по запросу `{query}`.");
+                return;
+            }
+            
+            if (number != -1)
+            {
+                track = searchResponse.Tracks.ElementAtOrDefault(number);
+            }
+            else if (vidId != null)
+            {
+                track = searchResponse.Tracks.FirstOrDefault(x => x.Id == vidId);
+                if (track == null)
+                {
+                    await ReplyAsyncWithCheck($"При поиске трека произошел фэйл. Бот не нашел именно трек по ссылке :(");
+                    return;
+                }
+            }
+            else
+            {
+                track = searchResponse.Tracks.FirstOrDefault();
+                if (track == null)
                 {
                     await ReplyAsyncWithCheck($"При поиске трека произошел фэйл");
                 }
@@ -241,36 +230,34 @@ np - что сейчас играет
 
             var player = _lavaNode.GetPlayer(Context.Guild);
 
+
             if (player.PlayerState == PlayerState.Playing || player.PlayerState == PlayerState.Paused)
             {
                 if (!string.IsNullOrWhiteSpace(searchResponse.Playlist.Name))
                 {
-                    foreach (var track in searchResponse.Tracks)
+                    foreach (var trk in searchResponse.Tracks)
                     {
-                        player.Queue.Enqueue(track);
+                        player.Queue.Enqueue(trk);
                     }
 
                     await ReplyAsyncWithCheck($"В очередь добавлено {searchResponse.Tracks.Count} треков");
                 }
                 else
                 {
-                    //var track = searchResponse.Tracks.First();
-                    player.Queue.Enqueue(foundedTrack);
-                    await ReplyAsyncWithCheck($"Добавлено в очередь: **{foundedTrack?.Title}**");
+                    player.Queue.Enqueue(track);
+                    await ReplyAsyncWithCheck($"Добавлено в очередь: **{track?.Title}**");
                 }
             }
             else
             {
-                //var track = searchResponse.Tracks.First();
-
                 if (!string.IsNullOrWhiteSpace(searchResponse.Playlist.Name))
                 {
                     for (var i = 0; i < searchResponse.Tracks.Count; i++)
                     {
                         if (i == 0)
                         {
-                            await player.PlayAsync(foundedTrack);
-                            await ReplyAsyncWithCheck($"Сейчас играет: {foundedTrack?.Title}");
+                            await player.PlayAsync(track);
+                            await ReplyAsyncWithCheck($"Сейчас играет: {track?.Title}");
                         }
                         else
                         {
@@ -282,11 +269,10 @@ np - что сейчас играет
                 }
                 else
                 {
-                    await player.PlayAsync(foundedTrack);
-                    await ReplyAsyncWithCheck($"Сейчас играет: **{foundedTrack?.Title}**");
+                    await player.PlayAsync(track);
+                    await ReplyAsyncWithCheck($"Сейчас играет: **{track?.Title}**");
                 }
             }
-
         }
 
         [Command("Stop", RunMode = RunMode.Async)]
@@ -319,9 +305,6 @@ np - что сейчас играет
             }
 
             await player.StopAsync();
-
-            //await ReplyAsync($"Остановлено");
-
         }
 
         [Command("Pause", RunMode = RunMode.Async)]
@@ -434,15 +417,22 @@ np - что сейчас играет
                 if (player.Queue.Count != 0)
                 {
                     var str = new StringBuilder();
-                    str.AppendLine("Треки в очереди:");
+                    str.AppendLine($"Сейчас играет: {player.Track.Title} Осталось [{new DateTime((player.Track.Duration - player.Track.Position).Ticks):HH:mm:ss}] " +
+                        $"<{player.Track.Url}>");
                     for (int i = 0; i < player.Queue.Count; i++)
                     {
-                        str.AppendLine($"{i} - {player.Queue.ElementAt(i).Title} [{new DateTime(player.Queue.ElementAt(i).Duration.Ticks):HH:mm:ss}]");
+                        str.AppendLine($"{i} - {player.Queue.ElementAt(i).Title} [{new DateTime(player.Queue.ElementAt(i).Duration.Ticks):HH:mm:ss}] " +
+                            $"<{ player.Track.Url}>");
                     }
                     //var totalTime = player.Queue.Sum(x => x.Duration.Ticks);
-                    var totalTime = player.Queue.Aggregate
-                (TimeSpan.Zero,
-                (sumSoFar, nextMyObject) => sumSoFar + nextMyObject.Duration);
+
+                    var q = player.Queue.Select(x => x.Duration).ToList();
+                    q.Add(player.Track.Duration - player.Track.Position);
+
+                    var totalTime = q.Aggregate
+                                    (TimeSpan.Zero,
+                                    (sumSoFar, nextMyObject) => sumSoFar + nextMyObject);
+
 
                     str.AppendLine("Всего времени плейлиста: " + new DateTime(totalTime.Ticks).ToString("HH:mm:ss"));
 
@@ -478,7 +468,7 @@ np - что сейчас играет
                     jokesList.Add("Кста, ");
                     jokesList.Add("Владдудос, ");
                     jokesList.Add("Где третий ГС? ");
-                    jokesList.Add("Продам пейран, кста! ");
+                    jokesList.Add("Продам пейран, кста!");
                     await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
                 case oxyId:
@@ -486,6 +476,10 @@ np - что сейчас играет
                     jokesList.Add("Мяяяя.... ");
                     jokesList.Add("Я надеюсь ты сейчас в шоколадном бубличке? ");
                     jokesList.Add("Простите, ");
+                    if (DateTime.Now.Hour > 20)
+                    {
+                        jokesList.Add("Не ем после шести!!! ");
+                    }
                     await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
                 case ozmaId:
@@ -504,6 +498,8 @@ np - что сейчас играет
                     jokesList.Add("Чё началось-то? ");
                     jokesList.Add("Бот застрял. ");
                     jokesList.Add("Оно поломалось... ");
+                    jokesList.Add("Я ничего не трогал! ");
+                    jokesList.Add("Ты ничего не трогал? ");
                     await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
                 case trimarId:

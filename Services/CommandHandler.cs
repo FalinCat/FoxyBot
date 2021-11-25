@@ -44,9 +44,24 @@ namespace FoxyBot.Services
             _client.MessageReceived += OnMessageReceived;
             _client.Ready += Client_Ready;
             _lavaNode.OnTrackEnded += _lavaNode_OnTrackEnded;
+            //_lavaNode.OnTrackStarted += _lavaNode_OnTrackStarted;
             await _service.AddModulesAsync(Assembly.GetEntryAssembly(), _provider);
+            
 
         }
+
+        //private async Task _lavaNode_DisconnectOnTimeoutAsync(TrackStartEventArgs arg)
+        //{
+        //    arg.Player.VoiceChannel.DisconnectAsync();
+        //}
+
+        //private async Task _lavaNode_OnTrackStarted(TrackStartEventArgs arg)
+        //{
+        //    CancellationTokenSource cts = new CancellationTokenSource();
+        //    CancellationToken token = cts.Token;
+
+
+        //}
 
         private async Task _lavaNode_OnTrackEnded(TrackEndedEventArgs arg)
         {
@@ -54,6 +69,7 @@ namespace FoxyBot.Services
             if (!player.Queue.TryDequeue(out var queueable))
             {
                 await player.TextChannel.SendMessageAsync("В очереди не осталось треков");
+                await _lavaNode.LeaveAsync(player.VoiceChannel);
                 return;
             }
 

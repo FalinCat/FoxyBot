@@ -34,15 +34,16 @@ namespace FoxyBot
                 .ConfigureLogging(x =>
                 {
                     x.AddConsole();
-                    x.SetMinimumLevel(LogLevel.Debug);
+                    x.SetMinimumLevel(LogLevel.Trace);
                 })
                 .ConfigureDiscordHost((context, config) =>
                 {
                     config.SocketConfig = new DiscordSocketConfig
                     {
-                        LogLevel = LogSeverity.Debug,
+                        LogLevel = LogSeverity.Verbose,
                         AlwaysDownloadUsers = false,
                         MessageCacheSize = 200,
+                        DefaultRetryMode = RetryMode.AlwaysRetry,
                     };
 
                     config.Token = context.Configuration["Token"];
@@ -50,7 +51,7 @@ namespace FoxyBot
                 .UseCommandService((context, config) =>
                 {
                     config.CaseSensitiveCommands = false;
-                    config.LogLevel = LogSeverity.Debug;
+                    config.LogLevel = LogSeverity.Verbose;
                     config.DefaultRunMode = RunMode.Async;
                 })
                 .ConfigureServices((context, services) =>
