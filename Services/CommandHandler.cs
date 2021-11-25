@@ -53,8 +53,10 @@ namespace FoxyBot.Services
 
         private async Task _lavaNode_OnTrackException(TrackExceptionEventArgs arg)
         {
-            await arg.Player.PlayAsync(arg.Track);            
-            await arg.Player.TextChannel.SendMessageAsync($"{arg.Track.Title} вызвала ошибку {arg.Exception} и я добавил ее опять");
+            
+            //await arg.Player.PlayAsync(arg.Track);            
+            //await arg.Player.TextChannel.SendMessageAsync($"{arg.Track.Title} вызвала ошибку {arg.Exception.Message} и я добавил ее опять");
+            //Console.WriteLine(arg.Player.LastUpdate);
         }
 
         private async Task _lavaNode_OnTrackEnded(TrackEndedEventArgs arg)
@@ -65,14 +67,20 @@ namespace FoxyBot.Services
             {
                 if (!player.Queue.TryDequeue(out var queueable))
                 {
-                    await player.TextChannel.SendMessageAsync("В очереди не осталось треков");
-                    await _lavaNode.LeaveAsync(player.VoiceChannel);
+                    //await player.TextChannel.SendMessageAsync("В очереди не осталось треков");
+                    //await _lavaNode.LeaveAsync(player.VoiceChannel);
                     return;
                 }
                 if (!(queueable is LavaTrack track))
                 {
                     await player.TextChannel.SendMessageAsync("Как то так произошло, что следующий трек в очереди - не трек");
                     return;
+                }
+
+                if (arg.Reason == Victoria.Enums.TrackEndReason.LoadFailed)
+                {
+                    await arg.Player.PlayAsync(arg.Track);
+                    await arg.Player.TextChannel.SendMessageAsync($"{arg.Track.Title} вызвала ошибку LoadFailed и я добавил ее опять");
                 }
 
                 await arg.Player.PlayAsync(track);
@@ -82,7 +90,7 @@ namespace FoxyBot.Services
             else
             {
                 await arg.Player.TextChannel.SendMessageAsync($"{arg.Reason} -> {arg.Track.Title}");
-                await player.TextChannel.SendMessageAsync("В очереди не осталось треков");
+                //await player.TextChannel.SendMessageAsync("В очереди не осталось треков");
                 //await arg.Player.VoiceChannel.DisconnectAsync();
             }
         }

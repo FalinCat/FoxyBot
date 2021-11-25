@@ -9,6 +9,7 @@ using System.Web;
 using Victoria;
 using Victoria.Enums;
 using Victoria.EventArgs;
+using Victoria.Responses.Search;
 
 namespace FoxyBot.Modules
 {
@@ -121,13 +122,13 @@ kick - пнуть бота нафиг из канала, также пнуть �
             await ReplyAsyncWithCheck(str.ToString());
         }
 
-        [Command("P", RunMode = RunMode.Async)]
+        [Command("Pold", RunMode = RunMode.Async)]
         public async Task PlayAsyncCut([Remainder] string query)
         {
             await PlayAsync(query);
         }
 
-        [Command("Play", RunMode = RunMode.Async)]
+        [Command("Playold", RunMode = RunMode.Async)]
         public async Task PlayAsync([Remainder] string query)
         {
             var origQuery = query;
@@ -144,7 +145,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
 
             if (_lavaNode.TryGetPlayer(Context.Guild, out var botChannel) && (botChannel.VoiceChannel.Id != voiceState?.VoiceChannel.Id))
             {
-                await ReplyAsyncWithCheck("Бот уже находится в голосовом канале: " + _lavaNode.GetPlayer(Context.Guild).VoiceChannel.Name + 
+                await ReplyAsyncWithCheck("Бот уже находится в голосовом канале: " + _lavaNode.GetPlayer(Context.Guild).VoiceChannel.Name +
                     ", а вы в канале - " + voiceState?.VoiceChannel);
                 return;
             }
@@ -233,7 +234,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
             }
 
             LavaTrack? track = null;
-            if ((searchResponse.Status == Victoria.Responses.Search.SearchStatus.LoadFailed ||
+            if ((searchResponse.Status == SearchStatus.LoadFailed ||
                 searchResponse.Status == Victoria.Responses.Search.SearchStatus.NoMatches))
             {
                 searchResponse = await _lavaNode.SearchYouTubeAsync(vidId);
@@ -569,6 +570,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
                     jokesList.Add("Простите, ");
                     jokesList.Add("Вивинг эвэрэйдж, ");
                     jokesList.Add("Жаренные булочки? ");
+                    jokesList.Add("Окси, КАКТУС! ");
                     if (DateTime.Now.Hour > 20)
                     {
                         jokesList.Add("Не ем после шести!!! ");
@@ -603,8 +605,6 @@ kick - пнуть бота нафиг из канала, также пнуть �
                     break;
                 case meddoId:
                     jokesList.Add("Чё началось-то? ");
-                    jokesList.Add("Опять застрял? ");
-                    jokesList.Add("Оно поломалось... ");
                     jokesList.Add("Я ничего не трогал! ");
                     jokesList.Add("Ты ничего не трогал? ");
                     await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
@@ -650,17 +650,20 @@ kick - пнуть бота нафиг из канала, также пнуть �
                     break;
                 case sovaId:
                     jokesList.Add("Совень, забери!!! ");
+                    jokesList.Add("Выключите интернет Сове! ");
                     jokesList.Add("Пора менять сим-карту? ");
                     jokesList.Add("Пора дипсить! ");
                     jokesList.Add("Пора переходить на 3g ");
                     await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
                 case elizabethId:
-                    jokesList.Add("Если есть в кармане пачка... Ой, простите ");
+                    jokesList.Add("Если есть в кармане пачка... Ой, простите, нету пачки ");
                     await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
                 case minorisId:
                     jokesList.Add("Пора править график? ");
+                    jokesList.Add("Профессиональный занудка, ");
+                    jokesList.Add("Зачем мне микрофон? И так слышно ");
                     jokesList.Add("Ту-ту-ру ");
                     await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
@@ -669,6 +672,231 @@ kick - пнуть бота нафиг из канала, также пнуть �
                     break;
             }
 
+        }
+
+
+        private async Task PlayMusicAsync(LavaTrack track)
+        {
+            await PlayMusicAsync(new List<LavaTrack>(new[] { track }));
+        }
+
+        private async Task PlayMusicAsync(List<LavaTrack> trackList)
+        {
+
+
+            if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
+                return;
+
+            if (player.PlayerState == PlayerState.Playing || player.PlayerState == PlayerState.Paused)
+            {
+                foreach (var track in trackList)
+                {
+                    player?.Queue.Enqueue(track);
+                }
+
+                if (trackList.Count > 1)
+                {
+                    await ReplyAsyncWithCheck($"Добавлено в очередь -> **{trackList.Count} треков**");
+                }
+                else if (trackList.Count == 1)
+                {
+                    await ReplyAsyncWithCheck($"Добавлено в очередь -> **{trackList.First().Title}**");
+                }
+
+                return;
+            }
+            else
+            {
+                await player.PlayAsync(trackList.ElementAt(0));
+                await ReplyAsyncWithCheck($"Сейчас играет -> **{trackList.ElementAt(0).Title}**");
+                trackList.RemoveAt(0);
+                if (trackList.Count == 0)
+                    return;
+                foreach (var track in trackList)
+                {
+                    player?.Queue.Enqueue(track);
+                }
+
+                await ReplyAsyncWithCheck($"Добавлено в очередь -> **{trackList.Count} треков**");
+
+            }
+        }
+
+        private async Task<List<LavaTrack>> SearchTrack(string query)
+        {
+            List<LavaTrack> trackList = new List<LavaTrack>();
+
+            if (query.Contains("youtu.be") || query.Contains("youtube.com"))
+            {
+                trackList = await SearchTrackUri(query);
+            }
+            else if (int.TryParse(query, out var number))
+            {
+                trackList = await SearchTrackNumber(number);
+            }
+            else
+            {
+                trackList = await SearchTrackString(query);
+            }
+
+            return trackList;
+        }
+
+        private async Task<List<LavaTrack>?> SearchTrackUri(string query)
+        {
+            var uri = new Uri(query);
+            var id = HttpUtility.ParseQueryString(uri.Query).Get("v");
+
+            if (id == null)
+            {
+                id = uri.LocalPath.Trim('/').Split('?')[0];
+            }
+
+            if (uri.Host == "music.youtube.com")
+            {
+                var searchString = $"http://{uri.Host}/watch?v={id}";
+                var res = await _lavaNode.SearchAsync(SearchType.Direct, searchString);
+                return res.Tracks.ToList();
+            }
+            else if (uri.Host == "youtube.com" || uri.Host == "www.youtube.com" || uri.Host == "youtu.be")
+            {
+                var list = HttpUtility.ParseQueryString(uri.Query).Get("list");
+                var index = HttpUtility.ParseQueryString(uri.Query).Get("index");
+
+                // Если это плейлист
+                if (list != null)
+                {
+                    var str = "https://youtu.be/" + id + "?list=" + list + "&index=" + index;
+                    var res = await _lavaNode.SearchAsync(SearchType.Direct, str);
+
+                    if (res.Status == SearchStatus.LoadFailed || res.Status == SearchStatus.NoMatches)
+                    {
+                        str = "https://youtu.be/" + id;
+                        res = await _lavaNode.SearchAsync(SearchType.Direct, str);
+
+                        if (res.Status == SearchStatus.LoadFailed || res.Status == SearchStatus.NoMatches)
+                            await ReplyAsyncWithCheck($"Поиск завершился ошибкой: {res.Exception.Message}");
+                    }
+
+                    var tracks = res.Tracks.ToList();
+                    return tracks.GetRange(res.Playlist.SelectedTrack, res.Tracks.Count - res.Playlist.SelectedTrack);
+                }
+                else // Если это ссылка на видео
+                {
+                    var videoId = HttpUtility.ParseQueryString(uri.Query).Get("v");
+                    var searchString = $"http://{uri.Host}/watch?v={videoId}";
+                    var res = await _lavaNode.SearchAsync(SearchType.Direct, searchString);
+                    var track = new List<LavaTrack>();
+                    foreach (var item in res.Tracks)
+                    {
+                        if (item.Id == videoId)
+                        {
+                            track.Add(item);
+                            break;
+                        }
+                    }
+
+                    return track;
+                }
+
+
+            }
+
+            return new List<LavaTrack>();
+        }
+
+        private async Task<List<LavaTrack>> SearchTrackString(string query)
+        {
+            var res = await _lavaNode.SearchAsync(SearchType.YouTube, query);
+            var list = new List<LavaTrack>();
+            if (res.Tracks.Count >= 1)
+                list.Add(res.Tracks.First());
+            return list;
+        }
+
+        private async Task<List<LavaTrack>> SearchTrackNumber(int number)
+        {
+            var messages = Context.Channel.GetCachedMessages(10);
+            string query = "";
+
+            foreach (var message in messages)
+            {
+                if (message.Content.ToLower().Contains("$search"))
+                {
+                    query = message.Content.TrimStart("$search".ToCharArray());
+                    break;
+                }
+            }
+            if (query != "")
+            {
+                var res = await _lavaNode.SearchAsync(SearchType.YouTube, query);
+                var trackList = new List<LavaTrack>(new[] { res.Tracks.ElementAt(number) });
+
+                return trackList;
+            }
+
+            return new List<LavaTrack>();
+        }
+
+
+
+
+        [Command("p", RunMode = RunMode.Async)]
+        public async Task TestShortAsync([Remainder] string query)
+        {
+            await PlayAsync(query);
+        }
+
+        [Command("Play", RunMode = RunMode.Async)]
+        private async Task TestAsync([Remainder] string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                await ReplyAsyncWithCheck("Непонятный запрос");
+                return;
+            }
+
+            var voiceState = Context.User as IVoiceState;
+            if (!_lavaNode.HasPlayer(Context.Guild))
+            {
+                if (voiceState?.VoiceChannel == null)
+                {
+                    await ReplyAsyncWithCheck("Необходимо находиться в голосовом канале!");
+                    return;
+                }
+                if (_lavaNode.TryGetPlayer(Context.Guild, out var botChannel) && (botChannel.VoiceChannel.Id != voiceState?.VoiceChannel.Id))
+                {
+                    await ReplyAsyncWithCheck("Бот уже находится в голосовом канале: " + _lavaNode.GetPlayer(Context.Guild).VoiceChannel.Name +
+                        ", а вы в канале - " + voiceState?.VoiceChannel);
+                    return;
+                }
+
+                try
+                {
+                    await _lavaNode.JoinAsync(voiceState.VoiceChannel, Context.Channel as ITextChannel);
+                }
+                catch (Exception exception)
+                {
+                    await ReplyAsyncWithCheck(exception.Message);
+                    return;
+                }
+            }
+
+
+
+
+
+            var result = SearchTrack(query).Result;
+            
+
+
+
+
+
+
+            
+
+            await PlayMusicAsync(result);
         }
     }
 
