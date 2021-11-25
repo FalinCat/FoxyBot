@@ -144,7 +144,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
             //var botChannel = _lavaNode.GetPlayer(Context.Guild).VoiceChannel;
             ;
 
-            if (_lavaNode.TryGetPlayer(Context.Guild, out var botChannel) && (botChannel != voiceState?.VoiceChannel))
+            if (_lavaNode.TryGetPlayer(Context.Guild, out var botChannel) && (botChannel.VoiceChannel.Id != voiceState?.VoiceChannel.Id))
             {
                 await ReplyAsyncWithCheck("Бот уже находится в голосовом канале: " + _lavaNode.GetPlayer(Context.Guild).VoiceChannel.Name + 
                     "а вы в канале - " + voiceState?.VoiceChannel);
