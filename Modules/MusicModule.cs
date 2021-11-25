@@ -141,28 +141,34 @@ kick - пнуть бота нафиг из канала, также пнуть �
 
             //if (!_lavaNode.HasPlayer(Context.Guild))
             //{
-                if (_lavaNode.HasPlayer(Context.Guild))
+            var voiceState = Context.User as IVoiceState;
+            if (_lavaNode.HasPlayer(Context.Guild))
+            {
+                if (_lavaNode.GetPlayer(Context.Guild).VoiceChannel != voiceState?.VoiceChannel)
                 {
                     await ReplyAsyncWithCheck("Бот уже находится в голосовом канале " + _lavaNode.GetPlayer(Context.Guild).VoiceChannel.Name);
                     return;
                 }
 
-                var voiceState = Context.User as IVoiceState;
-                if (voiceState?.VoiceChannel == null)
-                {
-                    await ReplyAsyncWithCheck("Необходимо находиться в голосовом канале!");
-                    return;
-                }
 
-                try
-                {
-                    await _lavaNode.JoinAsync(voiceState.VoiceChannel, Context.Channel as ITextChannel);
-                    //await ReplyAsync($"Joined {voiceState.VoiceChannel.Name}!");
-                }
-                catch (Exception exception)
-                {
-                    await ReplyAsyncWithCheck(exception.Message);
-                }
+            }
+
+
+            if (voiceState?.VoiceChannel == null)
+            {
+                await ReplyAsyncWithCheck("Необходимо находиться в голосовом канале!");
+                return;
+            }
+
+            try
+            {
+                await _lavaNode.JoinAsync(voiceState.VoiceChannel, Context.Channel as ITextChannel);
+                //await ReplyAsync($"Joined {voiceState.VoiceChannel.Name}!");
+            }
+            catch (Exception exception)
+            {
+                await ReplyAsyncWithCheck(exception.Message);
+            }
             //}
 
 
