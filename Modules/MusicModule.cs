@@ -43,7 +43,7 @@ np - что сейчас играет
 
             var str = new StringBuilder();
             str.Append($"[{player.Track.Title}]<{player.Track.Url}>");
-            str.AppendLine($" - [{new DateTime(player.Track.Position.Ticks).ToString("HH:mm:ss")}]" + 
+            str.AppendLine($" - [{new DateTime(player.Track.Position.Ticks).ToString("HH:mm:ss")}] " + 
                 $"/[{new DateTime(player.Track.Duration.Ticks).ToString("HH:mm:ss")}]");
             //str.AppendLine(player.Track.Url);
             await ReplyAsyncWithCheck(str.ToString());
@@ -414,7 +414,7 @@ np - что сейчас играет
             var player = _lavaNode.GetPlayer(Context.Guild);
             if (player != null)
             {
-                if (player.Queue.Count != 0)
+                if (player.Track != null || player.Queue.Count != 0)
                 {
                     var str = new StringBuilder();
                     str.AppendLine($"Сейчас играет: {player.Track.Title} Осталось [{new DateTime((player.Track.Duration - player.Track.Position).Ticks):HH:mm:ss}] " +
@@ -422,11 +422,12 @@ np - что сейчас играет
                     for (int i = 0; i < player.Queue.Count; i++)
                     {
                         str.AppendLine($"{i} - {player.Queue.ElementAt(i).Title} [{new DateTime(player.Queue.ElementAt(i).Duration.Ticks):HH:mm:ss}] " +
-                            $"<{ player.Track.Url}>");
+                            $"<{ player.Queue.ElementAt(i).Url}>");
                     }
                     //var totalTime = player.Queue.Sum(x => x.Duration.Ticks);
 
-                    var q = player.Queue.Select(x => x.Duration).ToList();
+                    var q = new List<TimeSpan>();
+                    q.AddRange(player.Queue.Select(x => x.Duration).ToList());
                     q.Add(player.Track.Duration - player.Track.Position);
 
                     var totalTime = q.Aggregate
@@ -496,7 +497,7 @@ np - что сейчас играет
                     break;
                 case meddoId:
                     jokesList.Add("Чё началось-то? ");
-                    jokesList.Add("Бот застрял. ");
+                    jokesList.Add("Опять застрял? ");
                     jokesList.Add("Оно поломалось... ");
                     jokesList.Add("Я ничего не трогал! ");
                     jokesList.Add("Ты ничего не трогал? ");
