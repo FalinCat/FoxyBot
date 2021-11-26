@@ -104,7 +104,7 @@ namespace FoxyBot.Services
                 }
                 else
                 {
-                    await arg.Player.TextChannel.SendMessageAsync($"**{arg.Track.Title}** вызвала ошибку LoadFailed (уже {serverFailCount[guild]} раз) и я добавил ее опять");
+                    await arg.Player.TextChannel.SendMessageAsync($"**{arg.Track.Title}** вызвала ошибку {arg.Reason} (уже {serverFailCount[guild]} раз) и я добавил ее опять");
                     await arg.Player.PlayAsync(arg.Track);
                     return;
                 }
