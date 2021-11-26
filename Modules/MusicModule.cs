@@ -794,6 +794,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
 
             if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
                 return;
+            await player.UpdateVolumeAsync(60);
 
             if (player.PlayerState == PlayerState.Playing || player.PlayerState == PlayerState.Paused)
             {
