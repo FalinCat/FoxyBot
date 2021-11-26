@@ -49,6 +49,7 @@ namespace FoxyBot.Services
             _client.Ready += Client_Ready;
             _lavaNode.OnTrackEnded += _lavaNode_OnTrackEnded;
             _lavaNode.OnTrackStarted += _lavaNode_OnTrackStarted;
+            _client.SetGameAsync(" норке");
             await _service.AddModulesAsync(Assembly.GetEntryAssembly(), _provider);
 
 

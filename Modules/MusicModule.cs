@@ -34,6 +34,7 @@ namespace FoxyBot.Modules
         {
             await ReplyAsyncWithCheck(@"
 play - p - поиск на ютубе
+playnext - pn - поставить трек следующим в очереди после сейчас проигрываемого
 pause - пауза
 resume - продолжить
 stop - остановить
@@ -45,7 +46,55 @@ kick - пнуть бота нафиг из канала, также пнуть �
 ");
         }
 
-        [Command("p", RunMode = RunMode.Async)]
+        [Command("pn", RunMode = RunMode.Async)]
+        private async Task PlayNextAsyncShort([Remainder] string query)
+        {
+            _ = PlayNextAsync(query);
+        }
+
+        [Command("Playnext", RunMode = RunMode.Async)]
+        private async Task PlayNextAsync([Remainder] string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                await ReplyAsyncWithCheck("Непонятный запрос");
+                return;
+            }
+
+            var voiceState = Context.User as IVoiceState;
+            if (!_lavaNode.HasPlayer(Context.Guild))
+            {
+                if (voiceState?.VoiceChannel == null)
+                {
+                    await ReplyAsyncWithCheck("Необходимо находиться в голосовом канале!");
+                    return;
+                }
+                if (_lavaNode.TryGetPlayer(Context.Guild, out var botChannel) && (botChannel.VoiceChannel.Id != voiceState?.VoiceChannel.Id))
+                {
+                    await ReplyAsyncWithCheck("Бот уже находится в голосовом канале: " + _lavaNode.GetPlayer(Context.Guild).VoiceChannel.Name +
+                        ", а вы в канале - " + voiceState?.VoiceChannel);
+                    return;
+                }
+
+                try
+                {
+                    await _lavaNode.JoinAsync(voiceState.VoiceChannel, Context.Channel as ITextChannel);
+                }
+                catch (Exception exception)
+                {
+                    await ReplyAsyncWithCheck(exception.Message);
+                    return;
+                }
+            }
+
+
+            var result = SearchTrack(query).Result;
+            await PlayMusicAsync(result, true);
+
+        }
+
+
+            [Command("p", RunMode = RunMode.Async)]
         public async Task TestShortAsync([Remainder] string query)
         {
             await PlayAsync(query);
@@ -536,7 +585,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
                                     (sumSoFar, nextMyObject) => sumSoFar + nextMyObject);
 
 
-                    str.AppendLine("Всего времени плейлиста: " + new DateTime(totalTime.Ticks).ToString("HH:mm:ss"));
+                    str.AppendLine("Всего времени плейлиста: **" + new DateTime(totalTime.Ticks).ToString("HH:mm:ss") + "**");
 
 
                     //var queue = "Будущие треки:" + Environment.NewLine + String.Join(Environment.NewLine, player.Queue.Select(x => x.Title));
@@ -735,7 +784,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
             await PlayMusicAsync(new List<LavaTrack>(new[] { track }));
         }
 
-        private async Task PlayMusicAsync(List<LavaTrack> trackList)
+        private async Task PlayMusicAsync(List<LavaTrack> trackList, bool playNext = false)
         {
             if (trackList.Count == 0)
             {
@@ -748,17 +797,36 @@ kick - пнуть бота нафиг из канала, также пнуть �
 
             if (player.PlayerState == PlayerState.Playing || player.PlayerState == PlayerState.Paused)
             {
-                foreach (var track in trackList)
-                {
-                    player?.Queue.Enqueue(track);
-                }
+
+
 
                 if (trackList.Count > 1)
                 {
+                    foreach (var track in trackList)
+                    {
+                        player?.Queue.Enqueue(track);
+                    }
+
                     await ReplyAsyncWithCheck($"Добавлено в очередь -> **{trackList.Count} треков**");
                 }
                 else if (trackList.Count == 1)
                 {
+                    if (playNext)
+                    {
+                        var tmpQueue = player.Queue.ToList();
+                        tmpQueue.Insert(0, trackList.First());
+                        player.Queue.Clear();
+                        foreach (var item in tmpQueue)
+                        {
+                            player.Queue.Enqueue(item);
+                        }
+
+                    }
+                    else
+                    {
+                        player.Queue.Enqueue(trackList.First());
+                    }
+                    
                     await ReplyAsyncWithCheck($"Добавлено в очередь -> **{trackList.First().Title}**");
                 }
 
