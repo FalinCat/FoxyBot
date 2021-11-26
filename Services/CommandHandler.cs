@@ -72,7 +72,7 @@ namespace FoxyBot.Services
         private async Task _lavaNode_OnTrackEnded(TrackEndedEventArgs arg)
         {
             var guild = arg.Player.VoiceChannel.Guild.Id;
-            Console.WriteLine("Guild - " + guild);
+            //Console.WriteLine("Guild - " + guild);
             var player = arg.Player;
 
             // Переподключение трека в случае ошибки
@@ -98,7 +98,7 @@ namespace FoxyBot.Services
                     {
                         // Если в очереди больше нет треков
                         await arg.Player.TextChannel.SendMessageAsync($"{arg.Reason} -> {arg.Track.Title} и это конец очереди");
-                        _ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(timeout));
+                        //_ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(timeout));
                         return;
                     }
                 }
@@ -124,14 +124,14 @@ namespace FoxyBot.Services
                 if (!player.Queue.TryDequeue(out var queueable))
                 {
                     await arg.Player.TextChannel.SendMessageAsync($"{arg.Reason} -> {arg.Track.Title} и это конец очереди");
-                    _ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(timeout));
+                    //_ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(timeout));
                     return;
                 }
 
                 if (!(queueable is LavaTrack track))
                 {
                     await player.TextChannel.SendMessageAsync("Зачем мне это подсунули?)).");
-                    _ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(timeout));
+                    //_ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(timeout));
                     return;
                 }
 
@@ -145,7 +145,7 @@ namespace FoxyBot.Services
             else
             {
                 await arg.Player.TextChannel.SendMessageAsync($"{arg.Reason} -> {arg.Track.Title} и это конец очереди");
-                _ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(timeout));
+                //_ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(timeout));
                 return;
             }
 
