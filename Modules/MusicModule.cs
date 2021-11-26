@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,9 +18,15 @@ namespace FoxyBot.Modules
     {
         private readonly LavaNode _lavaNode;
 
+
+
         public MusicModule(LavaNode lavaNode)
         {
             _lavaNode = lavaNode;
+            //_lavaNode.OnTrackStarted += _lavaNode_OnTrackStarted;
+            //_lavaNode.OnTrackEnded += _lavaNode_OnTrackEnded;
+            //_lavaNode.OnTrackStarted += _lavaNode_OnTrackStarted;
+
         }
 
         [Command("help", RunMode = RunMode.Async)]
@@ -38,21 +45,60 @@ kick - пнуть бота нафиг из канала, также пнуть �
 ");
         }
 
+        [Command("p", RunMode = RunMode.Async)]
+        public async Task TestShortAsync([Remainder] string query)
+        {
+            await PlayAsync(query);
+        }
+
+        [Command("Play", RunMode = RunMode.Async)]
+        private async Task PlayAsync([Remainder] string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                await ReplyAsyncWithCheck("Непонятный запрос");
+                return;
+            }
+
+            var voiceState = Context.User as IVoiceState;
+            if (!_lavaNode.HasPlayer(Context.Guild))
+            {
+                if (voiceState?.VoiceChannel == null)
+                {
+                    await ReplyAsyncWithCheck("Необходимо находиться в голосовом канале!");
+                    return;
+                }
+                if (_lavaNode.TryGetPlayer(Context.Guild, out var botChannel) && (botChannel.VoiceChannel.Id != voiceState?.VoiceChannel.Id))
+                {
+                    await ReplyAsyncWithCheck("Бот уже находится в голосовом канале: " + _lavaNode.GetPlayer(Context.Guild).VoiceChannel.Name +
+                        ", а вы в канале - " + voiceState?.VoiceChannel);
+                    return;
+                }
+
+                try
+                {
+                    await _lavaNode.JoinAsync(voiceState.VoiceChannel, Context.Channel as ITextChannel);
+                }
+                catch (Exception exception)
+                {
+                    await ReplyAsyncWithCheck(exception.Message);
+                    return;
+                }
+            }
+
+            var result = SearchTrack(query).Result;
+            await PlayMusicAsync(result);
+        }
+
         [Command("np", RunMode = RunMode.Async)]
         public async Task NowPlayingAsync()
         {
             var player = _lavaNode.GetPlayer(Context.Guild);
-
             var str = new StringBuilder();
             str.Append($"{player.Track.Title} <{player.Track.Url}>");
             str.AppendLine($" - [{new DateTime(player.Track.Position.Ticks).ToString("HH:mm:ss")}] " +
                 $"/[{new DateTime(player.Track.Duration.Ticks).ToString("HH:mm:ss")}]");
-            //str.AppendLine(player.Track.Url);
             await ReplyAsyncWithCheck(str.ToString());
-
-
-
-            //await ReplyAsync("", false, );
         }
 
         [Command("s", RunMode = RunMode.Async)]
@@ -122,14 +168,14 @@ kick - пнуть бота нафиг из канала, также пнуть �
             await ReplyAsyncWithCheck(str.ToString());
         }
 
-        [Command("Pold", RunMode = RunMode.Async)]
-        public async Task PlayAsyncCut([Remainder] string query)
+        /*[Command("Pold", RunMode = RunMode.Async)]
+        public async Task PlayAsyncCutOld([Remainder] string query)
         {
-            await PlayAsync(query);
+            await PlayAsyncOld(query);
         }
 
         [Command("Playold", RunMode = RunMode.Async)]
-        public async Task PlayAsync([Remainder] string query)
+        public async Task PlayAsyncOld([Remainder] string query)
         {
             var origQuery = query;
             if (string.IsNullOrWhiteSpace(query))
@@ -316,7 +362,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
                     await ReplyAsyncWithCheck($"Сейчас играет: **{player.Track.Title}**");
                 }
             }
-        }
+        }*/
 
         [Command("Stop", RunMode = RunMode.Async)]
         public async Task StopAsync()
@@ -349,7 +395,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
 
             player.Queue.Clear();
             await player.StopAsync();
-            await voiceState.VoiceChannel.DisconnectAsync();
+            //await voiceState.VoiceChannel.DisconnectAsync();
         }
 
         [Command("Pause", RunMode = RunMode.Async)]
@@ -449,7 +495,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
             }
 
             await player.SkipAsync();
-            await ReplyAsyncWithCheck($"Пропускаем трек... Сейчас играет **{player.Track.Title}**");
+            //await ReplyAsyncWithCheck($"Пропускаем трек... Сейчас играет **{player.Track.Title}**");
 
         }
 
@@ -549,6 +595,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
             const ulong sovaId = 169892911301787648;
             const ulong elizabethId = 256798937095208960;
             const ulong minorisId = 377851183479390208;
+            const ulong nickId = 339878121824321536;
 
 
             var jokesList = new List<string>();
@@ -667,6 +714,14 @@ kick - пнуть бота нафиг из канала, также пнуть �
                     jokesList.Add("Ту-ту-ру ");
                     await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
+                case nickId:
+                    jokesList.Add("Где мой инсулин? ");
+                    jokesList.Add("При чем тут паравозик Томас? ");
+                    jokesList.Add(":nerd: ? ");
+                    jokesList.Add(":eyes: ? ");
+
+                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
+                    break;
                 default:
                     await ReplyAsync(message);
                     break;
@@ -682,7 +737,11 @@ kick - пнуть бота нафиг из канала, также пнуть �
 
         private async Task PlayMusicAsync(List<LavaTrack> trackList)
         {
-
+            if (trackList.Count == 0)
+            {
+                await ReplyAsyncWithCheck($"К сожалению у меня не получилось найти нужное :pleading_face: ");
+                return;
+            }
 
             if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
                 return;
@@ -756,6 +815,29 @@ kick - пнуть бота нафиг из канала, также пнуть �
             {
                 var searchString = $"http://{uri.Host}/watch?v={id}";
                 var res = await _lavaNode.SearchAsync(SearchType.Direct, searchString);
+
+                if (res.Status == SearchStatus.LoadFailed)
+                {
+                    res = await _lavaNode.SearchAsync(SearchType.YouTubeMusic, searchString);
+                    if (res.Status == SearchStatus.LoadFailed)
+                    {
+                        var count = 0;
+                        while (res.Status != SearchStatus.TrackLoaded || res.Status != SearchStatus.PlaylistLoaded)
+                        {
+                            res = await _lavaNode.SearchAsync(SearchType.Direct, searchString);
+                            count++;
+
+                            if (count == 10)
+                            {
+                                break;
+                            }
+                        }
+                    }
+
+
+
+                }
+
                 return res.Tracks.ToList();
             }
             else if (uri.Host == "youtube.com" || uri.Host == "www.youtube.com" || uri.Host == "youtu.be")
@@ -807,8 +889,21 @@ kick - пнуть бота нафиг из канала, также пнуть �
 
         private async Task<List<LavaTrack>> SearchTrackString(string query)
         {
-            var res = await _lavaNode.SearchAsync(SearchType.YouTube, query);
             var list = new List<LavaTrack>();
+            var res = await _lavaNode.SearchAsync(SearchType.YouTube, query);
+            if (res.Status == SearchStatus.LoadFailed)
+            {
+                res = await _lavaNode.SearchAsync(SearchType.YouTube, query);
+            }
+            else if (res.Status == SearchStatus.NoMatches)
+            {
+                res = await _lavaNode.SearchAsync(SearchType.Direct, query);
+                if (res.Status == SearchStatus.NoMatches)
+                {
+                    res = await _lavaNode.SearchAsync(SearchType.SoundCloud, query);
+                }
+
+            }
             if (res.Tracks.Count >= 1)
                 list.Add(res.Tracks.First());
             return list;
@@ -837,68 +932,5 @@ kick - пнуть бота нафиг из канала, также пнуть �
 
             return new List<LavaTrack>();
         }
-
-
-
-
-        [Command("p", RunMode = RunMode.Async)]
-        public async Task TestShortAsync([Remainder] string query)
-        {
-            await PlayAsync(query);
-        }
-
-        [Command("Play", RunMode = RunMode.Async)]
-        private async Task TestAsync([Remainder] string query)
-        {
-            if (string.IsNullOrWhiteSpace(query))
-            {
-                await ReplyAsyncWithCheck("Непонятный запрос");
-                return;
-            }
-
-            var voiceState = Context.User as IVoiceState;
-            if (!_lavaNode.HasPlayer(Context.Guild))
-            {
-                if (voiceState?.VoiceChannel == null)
-                {
-                    await ReplyAsyncWithCheck("Необходимо находиться в голосовом канале!");
-                    return;
-                }
-                if (_lavaNode.TryGetPlayer(Context.Guild, out var botChannel) && (botChannel.VoiceChannel.Id != voiceState?.VoiceChannel.Id))
-                {
-                    await ReplyAsyncWithCheck("Бот уже находится в голосовом канале: " + _lavaNode.GetPlayer(Context.Guild).VoiceChannel.Name +
-                        ", а вы в канале - " + voiceState?.VoiceChannel);
-                    return;
-                }
-
-                try
-                {
-                    await _lavaNode.JoinAsync(voiceState.VoiceChannel, Context.Channel as ITextChannel);
-                }
-                catch (Exception exception)
-                {
-                    await ReplyAsyncWithCheck(exception.Message);
-                    return;
-                }
-            }
-
-
-
-
-
-            var result = SearchTrack(query).Result;
-            
-
-
-
-
-
-
-            
-
-            await PlayMusicAsync(result);
-        }
     }
-
-
 }
