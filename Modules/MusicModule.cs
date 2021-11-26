@@ -622,6 +622,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
             }
             player.Queue.Clear();
             await player.StopAsync();
+            await _lavaNode.LeaveAsync(voiceState.VoiceChannel);
             await voiceState.VoiceChannel.DisconnectAsync();
             await ReplyAsyncWithCheck("Бот получил пинок под зад и удалился");
 
@@ -794,13 +795,10 @@ kick - пнуть бота нафиг из канала, также пнуть �
 
             if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
                 return;
-            await player.UpdateVolumeAsync(60);
+            await player.UpdateVolumeAsync(30);
 
             if (player.PlayerState == PlayerState.Playing || player.PlayerState == PlayerState.Paused)
             {
-
-
-
                 if (trackList.Count > 1)
                 {
                     foreach (var track in trackList)

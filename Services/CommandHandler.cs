@@ -23,7 +23,7 @@ namespace FoxyBot.Services
         private readonly CommandService _service;
         private readonly IConfiguration _configuration;
         private readonly LavaNode _lavaNode;
-        public static Dictionary<ulong, int> serverFailCount = new Dictionary<ulong, int>();
+        public static ConcurrentDictionary<ulong, int> serverFailCount = new ConcurrentDictionary<ulong, int>();
         private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _disconnectTokens = new ConcurrentDictionary<ulong, CancellationTokenSource>();
         private readonly int timeout = 300;
 
@@ -92,15 +92,15 @@ namespace FoxyBot.Services
                         await CancelDisconnect(arg);
                         await arg.Player.TextChannel.SendMessageAsync($"{arg.Reason} -> **{arg.Track.Title}**" + Environment.NewLine +
                                 $"Сейчас играет: **{player.Track.Title}** <{player.Track.Url}>");
-                        return;
                     }
                     else
                     {
                         // Если в очереди больше нет треков
                         await arg.Player.TextChannel.SendMessageAsync($"{arg.Reason} -> {arg.Track.Title} и это конец очереди");
                         //_ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(timeout));
-                        return;
                     }
+                    serverFailCount[guild] = 0;
+                    return;
                 }
                 else
                 {
