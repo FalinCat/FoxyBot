@@ -25,6 +25,7 @@ namespace FoxyBot.Services
         private readonly LavaNode _lavaNode;
         public static Dictionary<ulong, int> serverFailCount = new Dictionary<ulong, int>();
         private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _disconnectTokens = new ConcurrentDictionary<ulong, CancellationTokenSource>();
+        private readonly int timeout = 300;
 
         public CommandHandler(IServiceProvider provider, DiscordSocketClient client, CommandService service, IConfiguration configuration, LavaNode lavaNode)
         {
@@ -88,6 +89,7 @@ namespace FoxyBot.Services
 
                     if (player.Track != null)
                     {
+                        await CancelDisconnect(arg);
                         await arg.Player.TextChannel.SendMessageAsync($"{arg.Reason} -> **{arg.Track.Title}**" + Environment.NewLine +
                                 $"Сейчас играет: **{player.Track.Title}** <{player.Track.Url}>");
                         return;
@@ -96,7 +98,7 @@ namespace FoxyBot.Services
                     {
                         // Если в очереди больше нет треков
                         await arg.Player.TextChannel.SendMessageAsync($"{arg.Reason} -> {arg.Track.Title} и это конец очереди");
-                        _ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(300));
+                        _ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(timeout));
                         return;
                     }
                 }
@@ -112,6 +114,7 @@ namespace FoxyBot.Services
             // Если в очереди есть следующий трек, то просто пишем что он есть
             if (player.Track != null)
             {
+                await CancelDisconnect(arg);
                 await arg.Player.TextChannel.SendMessageAsync($"{arg.Reason} -> **{arg.Track.Title}**" + Environment.NewLine +
                         $"Сейчас играет: **{player.Track.Title}** <{player.Track.Url}>");
                 return;
@@ -121,33 +124,36 @@ namespace FoxyBot.Services
                 if (!player.Queue.TryDequeue(out var queueable))
                 {
                     await arg.Player.TextChannel.SendMessageAsync($"{arg.Reason} -> {arg.Track.Title} и это конец очереди");
-                    _ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(300));
+                    _ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(timeout));
                     return;
                 }
 
                 if (!(queueable is LavaTrack track))
                 {
                     await player.TextChannel.SendMessageAsync("Зачем мне это подсунули?)).");
-                    _ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(300));
+                    _ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(timeout));
                     return;
                 }
 
+                await CancelDisconnect(arg);
                 await arg.Player.PlayAsync(track);
                 await arg.Player.TextChannel.SendMessageAsync($"{arg.Reason} -> **{arg.Track.Title}**" + Environment.NewLine +
                     $"Сейчас играет: **{track.Title}** <{track.Url}>");
 
                 return;
             }
-            else {
+            else
+            {
                 await arg.Player.TextChannel.SendMessageAsync($"{arg.Reason} -> {arg.Track.Title} и это конец очереди");
-                _ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(300));
+                _ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(timeout));
                 return;
             }
 
 
         }
 
-        private async Task _lavaNode_OnTrackStarted(TrackStartEventArgs arg)
+
+        private async Task CancelDisconnect(TrackEndedEventArgs arg)
         {
             if (_disconnectTokens.ContainsKey(arg.Player.VoiceChannel.Id))
             {
@@ -160,9 +166,26 @@ namespace FoxyBot.Services
                 await arg.Player.TextChannel.SendMessageAsync("Оу май, мы продолжаем играть!!!");
 
             }
+        }
 
+        private async Task CancelDisconnect(TrackStartEventArgs arg)
+        {
+            if (_disconnectTokens.ContainsKey(arg.Player.VoiceChannel.Id))
+            {
+                _disconnectTokens.TryGetValue(arg.Player.VoiceChannel.Id, out var value);
 
+                if (value.IsCancellationRequested)
+                    return;
 
+                value.Cancel(true);
+                await arg.Player.TextChannel.SendMessageAsync("Оу май, мы продолжаем играть!!!");
+
+            }
+        }
+
+        private async Task _lavaNode_OnTrackStarted(TrackStartEventArgs arg)
+        {
+            await CancelDisconnect(arg);
         }
 
         private async Task InitiateDisconnectAsync(LavaPlayer player, TimeSpan timeSpan)
