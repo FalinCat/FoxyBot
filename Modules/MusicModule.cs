@@ -925,6 +925,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
 
         private async Task<List<LavaTrack>?> SearchTrackUri(string query)
         {
+            
             var uri = new Uri(query);
             var id = HttpUtility.ParseQueryString(uri.Query).Get("v");
 
@@ -932,6 +933,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
             {
                 id = uri.LocalPath.Trim('/').Split('?')[0];
             }
+            
 
             if (uri.Host == "music.youtube.com")
             {
@@ -987,13 +989,14 @@ kick - пнуть бота нафиг из канала, также пнуть �
                 }
                 else // Если это ссылка на видео
                 {
-                    var videoId = HttpUtility.ParseQueryString(uri.Query).Get("v");
-                    var searchString = $"http://{uri.Host}/watch?v={videoId}";
+                    _logger.LogDebug($"Search track with id: {id}", id);
+                    //var searchString = $"http://{uri.Host}/watch?v={id}";
+                    var searchString = id;
                     var res = await _lavaNode.SearchAsync(SearchType.Direct, searchString);
                     var track = new List<LavaTrack>();
                     foreach (var item in res.Tracks)
                     {
-                        if (item.Id == videoId)
+                        if (item.Id == id)
                         {
                             track.Add(item);
                             break;
