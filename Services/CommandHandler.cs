@@ -25,7 +25,7 @@ namespace FoxyBot.Services
         private readonly LavaNode _lavaNode;
         public static ConcurrentDictionary<ulong, int> serverFailCount = new ConcurrentDictionary<ulong, int>();
         private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _disconnectTokens = new ConcurrentDictionary<ulong, CancellationTokenSource>();
-        private readonly int timeout = 300;
+        private readonly int timeout = 15;
 
         public CommandHandler(IServiceProvider provider, DiscordSocketClient client, CommandService service, IConfiguration configuration, LavaNode lavaNode)
         {
@@ -50,10 +50,14 @@ namespace FoxyBot.Services
             _client.Ready += Client_Ready;
             _lavaNode.OnTrackEnded += _lavaNode_OnTrackEnded;
             _lavaNode.OnTrackStarted += _lavaNode_OnTrackStarted;
+            _lavaNode.OnTrackStuck += _lavaNode_OnTrackStuck;
             _client.SetGameAsync(" норке");
             await _service.AddModulesAsync(Assembly.GetEntryAssembly(), _provider);
+        }
 
-
+        private async Task _lavaNode_OnTrackStuck(TrackStuckEventArgs arg)
+        {
+            await arg.Player.TextChannel.SendMessageAsync("Трек застрял? Попробуйте $kick и поставить его заново");
         }
 
         private async Task OnMessageReceived(SocketMessage socketMessage)
@@ -97,7 +101,7 @@ namespace FoxyBot.Services
                     {
                         // Если в очереди больше нет треков
                         await arg.Player.TextChannel.SendMessageAsync($"{arg.Reason} -> {arg.Track.Title} и это конец очереди");
-                        //_ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(timeout));
+                        _ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(timeout));
                     }
                     serverFailCount[guild] = 0;
                     return;
@@ -124,14 +128,14 @@ namespace FoxyBot.Services
                 if (!player.Queue.TryDequeue(out var queueable))
                 {
                     await arg.Player.TextChannel.SendMessageAsync($"{arg.Reason} -> {arg.Track.Title} и это конец очереди");
-                    //_ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(timeout));
+                    _ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(timeout));
                     return;
                 }
 
                 if (!(queueable is LavaTrack track))
                 {
                     await player.TextChannel.SendMessageAsync("Зачем мне это подсунули?)).");
-                    //_ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(timeout));
+                    _ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(timeout));
                     return;
                 }
 
@@ -145,7 +149,7 @@ namespace FoxyBot.Services
             else
             {
                 await arg.Player.TextChannel.SendMessageAsync($"{arg.Reason} -> {arg.Track.Title} и это конец очереди");
-                //_ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(timeout));
+                _ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(timeout));
                 return;
             }
 
@@ -163,7 +167,7 @@ namespace FoxyBot.Services
                     return;
 
                 value.Cancel(true);
-                await arg.Player.TextChannel.SendMessageAsync("Оу май, мы продолжаем играть!!!");
+                //await arg.Player.TextChannel.SendMessageAsync("Оу май, мы продолжаем играть!!!"); 
 
             }
         }
@@ -178,13 +182,14 @@ namespace FoxyBot.Services
                     return;
 
                 value.Cancel(true);
-                await arg.Player.TextChannel.SendMessageAsync("Оу май, мы продолжаем играть!!!");
+                //await arg.Player.TextChannel.SendMessageAsync("Оу май, мы продолжаем играть!!!");
 
             }
         }
 
         private async Task _lavaNode_OnTrackStarted(TrackStartEventArgs arg)
         {
+            //await arg.Player.TextChannel.SendMessageAsync("Че началось то");
             await CancelDisconnect(arg);
         }
 
@@ -203,7 +208,7 @@ namespace FoxyBot.Services
 
             //await player.TextChannel.SendMessageAsync($"Auto disconnect initiated! Disconnecting in {timeSpan}...");
             var isCancelled = SpinWait.SpinUntil(() => value.IsCancellationRequested, timeSpan);
-            if (isCancelled)
+            if (isCancelled || player.PlayerState == PlayerState.Playing || player.PlayerState == PlayerState.Paused)
             {
                 return;
             }
