@@ -989,10 +989,16 @@ kick - пнуть бота нафиг из канала, также пнуть �
                 }
                 else // Если это ссылка на видео
                 {
-                    _logger.LogDebug($"Search track with id: {id}", id);
+                    _logger.LogDebug($"Search track with id: {id}");
                     //var searchString = $"http://{uri.Host}/watch?v={id}";
                     var searchString = id;
                     var res = await _lavaNode.SearchAsync(SearchType.Direct, searchString);
+                    if (res.Status == SearchStatus.NoMatches)
+                    {
+                        _logger.LogDebug($"NoMatches, try search with full url...");
+                        searchString = $"http://{uri.Host}/watch?v={id}";
+                        res = await _lavaNode.SearchAsync(SearchType.Direct, searchString);
+                    }
                     var track = new List<LavaTrack>();
                     foreach (var item in res.Tracks)
                     {
