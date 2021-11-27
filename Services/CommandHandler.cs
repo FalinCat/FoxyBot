@@ -2,6 +2,7 @@
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -15,7 +16,7 @@ using Victoria.EventArgs;
 
 namespace FoxyBot.Services
 {
-    public class CommandHandler : InitializedService
+    public class CommandHandler : DiscordClientService
     {
 
         private readonly IServiceProvider _provider;
@@ -27,14 +28,27 @@ namespace FoxyBot.Services
         private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _disconnectTokens = new ConcurrentDictionary<ulong, CancellationTokenSource>();
         private readonly int timeout = 300;
 
-        public CommandHandler(IServiceProvider provider, DiscordSocketClient client, CommandService service, IConfiguration configuration, LavaNode lavaNode)
+        ILogger<DiscordClientService> _logger;
+
+        public CommandHandler(DiscordSocketClient client, ILogger<DiscordClientService> logger, LavaNode lavaNode, IServiceProvider provider,
+            CommandService service, IConfiguration configuration) : base(client, logger)
         {
-            _provider = provider;
             _client = client;
-            _service = service;
-            _configuration = configuration;
+            _logger = logger;
             _lavaNode = lavaNode;
+            _service = service;
+            _provider = provider;
+            _configuration = configuration;
         }
+
+        //public CommandHandler(IServiceProvider provider, DiscordSocketClient client, CommandService service, IConfiguration configuration, LavaNode lavaNode)
+        //{
+        //    _provider = provider;
+        //    _client = client;
+        //    _service = service;
+        //    _configuration = configuration;
+        //    _lavaNode = lavaNode;
+        //}
 
         private async Task Client_Ready()
         {
@@ -44,7 +58,8 @@ namespace FoxyBot.Services
             }
         }
 
-        public override async Task InitializeAsync(CancellationToken cancellationToken)
+
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             _client.MessageReceived += OnMessageReceived;
             _client.Ready += Client_Ready;
@@ -54,6 +69,18 @@ namespace FoxyBot.Services
             _client.SetGameAsync(" норке");
             await _service.AddModulesAsync(Assembly.GetEntryAssembly(), _provider);
         }
+
+
+        //public override async Task InitializeAsync(CancellationToken cancellationToken)
+        //{
+        //    _client.MessageReceived += OnMessageReceived;
+        //    _client.Ready += Client_Ready;
+        //    _lavaNode.OnTrackEnded += _lavaNode_OnTrackEnded;
+        //    _lavaNode.OnTrackStarted += _lavaNode_OnTrackStarted;
+        //    _lavaNode.OnTrackStuck += _lavaNode_OnTrackStuck;
+        //    _client.SetGameAsync(" норке");
+        //    await _service.AddModulesAsync(Assembly.GetEntryAssembly(), _provider);
+        //}
 
         private async Task _lavaNode_OnTrackStuck(TrackStuckEventArgs arg)
         {
@@ -76,7 +103,6 @@ namespace FoxyBot.Services
         private async Task _lavaNode_OnTrackEnded(TrackEndedEventArgs arg)
         {
             var guild = arg.Player.VoiceChannel.Guild.Id;
-            //Console.WriteLine("Guild - " + guild);
             var player = arg.Player;
 
             // Переподключение трека в случае ошибки
@@ -216,5 +242,7 @@ namespace FoxyBot.Services
             await _lavaNode.LeaveAsync(player.VoiceChannel);
             await player.TextChannel.SendMessageAsync("Я устал молчать, я ухожу");
         }
+
+
     }
 }

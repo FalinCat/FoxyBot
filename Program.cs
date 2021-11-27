@@ -57,16 +57,16 @@ namespace FoxyBot
                 .ConfigureServices((context, services) =>
                 {
                     var lConf = new LavaConfig();
-                    lConf.Hostname = "lavalink.devin-dev.xyz";
+                    //lConf.Hostname = "lavalink.devin-dev.xyz";
+                    lConf.Hostname = "lava.devin-dev.xyz";
                     lConf.Port = 443;
                     lConf.Authorization = "lava123";
                     lConf.IsSsl = true;
 
-
                     //lConf.Hostname = "lava.link";
                     //lConf.Port = 80;
-                    //lConf.Authorization = "WGPPAAXZZASFASFSOJIYWWW";
-                    //lConf.ReconnectAttempts = 5;
+                    //lConf.Authorization = "somepass";
+                    //lConf.ReconnectAttempts = 50;
                     //lConf.EnableResume = true;
                     //lConf.ReconnectDelay = TimeSpan.FromSeconds(5);
                     services

@@ -1,5 +1,7 @@
 ﻿using Discord;
+using Discord.Addons.Hosting;
 using Discord.Commands;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -17,12 +19,13 @@ namespace FoxyBot.Modules
     public class MusicModule : ModuleBase<SocketCommandContext>
     {
         private readonly LavaNode _lavaNode;
+        ILogger<DiscordClientService> _logger;
 
 
-
-        public MusicModule(LavaNode lavaNode)
+        public MusicModule(LavaNode lavaNode, ILogger<DiscordClientService> logger)
         {
             _lavaNode = lavaNode;
+            _logger = logger;
             //_lavaNode.OnTrackStarted += _lavaNode_OnTrackStarted;
             //_lavaNode.OnTrackEnded += _lavaNode_OnTrackEnded;
             //_lavaNode.OnTrackStarted += _lavaNode_OnTrackStarted;
@@ -661,6 +664,26 @@ kick - пнуть бота нафиг из канала, также пнуть �
 
         }
 
+        [Command("volume", RunMode = RunMode.Async)]
+        private async Task SetVolumeAsync([Remainder] string query)
+        {           
+            if (ushort.TryParse(query, out ushort value))
+            {
+                if (value > 100 || value < 2)
+                {
+                    await ReplyAsyncWithCheck($"Громкость надо ставить в пределах от 2 до 100 ");
+                    return;
+                }
+                var player = _lavaNode?.GetPlayer(Context.Guild);
+                await player.UpdateVolumeAsync(value);
+                await ReplyAsyncWithCheck($"Громкость установлена на " + value);
+            }
+            else
+            {
+                await ReplyAsyncWithCheck($"Параметр надо ставить циферкой :) ");
+            }
+        }
+
         private async Task ReplyAsyncWithCheck(string message)
         {
             const ulong vladId = 330647539076300801;
@@ -828,7 +851,6 @@ kick - пнуть бота нафиг из канала, также пнуть �
 
             if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
                 return;
-            await player.UpdateVolumeAsync(30);
 
             if (player.PlayerState == PlayerState.Playing || player.PlayerState == PlayerState.Paused)
             {
