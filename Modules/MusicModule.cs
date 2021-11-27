@@ -42,12 +42,42 @@ pause - пауза
 resume - продолжить
 stop - остановить
 skip - пропустить
+clear - очистить очередь не трогая текущий трек
 shuffle - перемешать очередь
 search - s - поиск. После получения списка писать команду $play N где N - номер трека из списка (иногда ютуб решает поменять местами треки в результате и надо еще раз сделать $search)
 q - посмотреть очередь
 np - что сейчас играет
 kick - пнуть бота нафиг из канала, также пнуть если он завис
 ");
+        }
+
+        [Command("Clear", RunMode = RunMode.Async)]
+        private async Task ClearAsync()
+        {
+            var voiceState = Context.User as IVoiceState;
+            if (!_lavaNode.HasPlayer(Context.Guild))
+            {
+                if (voiceState?.VoiceChannel == null)
+                {
+                    await ReplyAsyncWithCheck("Необходимо находиться в голосовом канале!");
+                    return;
+                }
+                if (_lavaNode.TryGetPlayer(Context.Guild, out var botChannel) && (botChannel.VoiceChannel.Id != voiceState?.VoiceChannel.Id))
+                {
+                    await ReplyAsyncWithCheck("Бот уже находится в голосовом канале: " + _lavaNode.GetPlayer(Context.Guild).VoiceChannel.Name +
+                        ", а вы в канале - " + voiceState?.VoiceChannel);
+                    return;
+                }
+            }
+
+            var player = _lavaNode?.GetPlayer(Context.Guild);
+            if (player != null)
+            {
+                player.Queue.Clear();
+                _logger.LogDebug("Очередь очищенна");
+                await ReplyAsyncWithCheck("Очередь очищенна");
+            }
+
         }
 
         [Command("pn", RunMode = RunMode.Async)]
