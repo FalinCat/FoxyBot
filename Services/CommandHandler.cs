@@ -25,7 +25,7 @@ namespace FoxyBot.Services
         private readonly LavaNode _lavaNode;
         public static ConcurrentDictionary<ulong, int> serverFailCount = new ConcurrentDictionary<ulong, int>();
         private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _disconnectTokens = new ConcurrentDictionary<ulong, CancellationTokenSource>();
-        private readonly int timeout = 15;
+        private readonly int timeout = 300;
 
         public CommandHandler(IServiceProvider provider, DiscordSocketClient client, CommandService service, IConfiguration configuration, LavaNode lavaNode)
         {
