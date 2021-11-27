@@ -39,6 +39,7 @@ pause - пауза
 resume - продолжить
 stop - остановить
 skip - пропустить
+shuffle - перемешать очередь
 search - s - поиск. После получения списка писать команду $play N где N - номер трека из списка (иногда ютуб решает поменять местами треки в результате и надо еще раз сделать $search)
 q - посмотреть очередь
 np - что сейчас играет
@@ -94,7 +95,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
         }
 
 
-            [Command("p", RunMode = RunMode.Async)]
+        [Command("p", RunMode = RunMode.Async)]
         public async Task TestShortAsync([Remainder] string query)
         {
             await PlayAsync(query);
@@ -628,6 +629,38 @@ kick - пнуть бота нафиг из канала, также пнуть �
 
         }
 
+        [Command("shuffle", RunMode = RunMode.Async)]
+        private async Task ShuffleAsync()
+        {
+            var voiceState = Context.User as IVoiceState;
+            if (voiceState?.VoiceChannel == null)
+            {
+                await ReplyAsyncWithCheck("Вы должны быть в голосовом канале");
+                return;
+            }
+
+            if (!_lavaNode.HasPlayer(Context.Guild))
+            {
+                await ReplyAsyncWithCheck("Бот не в голосовом канале");
+                return;
+            }
+
+            var player = _lavaNode.GetPlayer(Context.Guild);
+            if (voiceState.VoiceChannel != player.VoiceChannel)
+            {
+                await ReplyAsyncWithCheck("Бот находится не в ващем текущем голосовом канале");
+                return;
+            }
+
+            if (player.Queue.Count > 1)
+            {
+                player.Queue.Shuffle();
+                await ReplyAsyncWithCheck("Перемешал очередь в случайном порядке!");
+            }
+
+
+        }
+
         private async Task ReplyAsyncWithCheck(string message)
         {
             const ulong vladId = 330647539076300801;
@@ -825,7 +858,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
                     {
                         player.Queue.Enqueue(trackList.First());
                     }
-                    
+
                     await ReplyAsyncWithCheck($"Добавлено в очередь -> **{trackList.First().Title}**");
                 }
 
