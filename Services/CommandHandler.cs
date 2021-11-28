@@ -41,14 +41,6 @@ namespace FoxyBot.Services
             _configuration = configuration;
         }
 
-        //public CommandHandler(IServiceProvider provider, DiscordSocketClient client, CommandService service, IConfiguration configuration, LavaNode lavaNode)
-        //{
-        //    _provider = provider;
-        //    _client = client;
-        //    _service = service;
-        //    _configuration = configuration;
-        //    _lavaNode = lavaNode;
-        //}
 
         private async Task Client_Ready()
         {
@@ -71,21 +63,11 @@ namespace FoxyBot.Services
         }
 
 
-        //public override async Task InitializeAsync(CancellationToken cancellationToken)
-        //{
-        //    _client.MessageReceived += OnMessageReceived;
-        //    _client.Ready += Client_Ready;
-        //    _lavaNode.OnTrackEnded += _lavaNode_OnTrackEnded;
-        //    _lavaNode.OnTrackStarted += _lavaNode_OnTrackStarted;
-        //    _lavaNode.OnTrackStuck += _lavaNode_OnTrackStuck;
-        //    _client.SetGameAsync(" норке");
-        //    await _service.AddModulesAsync(Assembly.GetEntryAssembly(), _provider);
-        //}
-
         private async Task _lavaNode_OnTrackStuck(TrackStuckEventArgs arg)
         {
             await arg.Player.TextChannel.SendMessageAsync("Трек застрял? Попробуйте $kick и поставить его заново");
         }
+
 
         private async Task OnMessageReceived(SocketMessage socketMessage)
         {
@@ -140,8 +122,7 @@ namespace FoxyBot.Services
                 }
             }
 
-
-            // Если в очереди есть следующий трек, то просто пишем что он есть
+            // Если в очереди есть следующий трек, то просто пишем что он есть. Это если кто-то скипнул очередь, Skip переключает сам на следующший трек
             if (player.Track != null)
             {
                 await CancelDisconnect(arg);
@@ -198,26 +179,26 @@ namespace FoxyBot.Services
             }
         }
 
+
         private async Task CancelDisconnect(TrackStartEventArgs arg)
         {
             if (_disconnectTokens.ContainsKey(arg.Player.VoiceChannel.Id))
             {
                 _disconnectTokens.TryGetValue(arg.Player.VoiceChannel.Id, out var value);
-
                 if (value.IsCancellationRequested)
                     return;
 
                 value.Cancel(true);
-                //await arg.Player.TextChannel.SendMessageAsync("Оу май, мы продолжаем играть!!!");
-
             }
         }
+
 
         private async Task _lavaNode_OnTrackStarted(TrackStartEventArgs arg)
         {
             //await arg.Player.TextChannel.SendMessageAsync("Че началось то");
             await CancelDisconnect(arg);
         }
+
 
         private async Task InitiateDisconnectAsync(LavaPlayer player, TimeSpan timeSpan)
         {
@@ -231,18 +212,13 @@ namespace FoxyBot.Services
                 _disconnectTokens.TryUpdate(player.VoiceChannel.Id, new CancellationTokenSource(), value);
                 value = _disconnectTokens[player.VoiceChannel.Id];
             }
-
-            //await player.TextChannel.SendMessageAsync($"Auto disconnect initiated! Disconnecting in {timeSpan}...");
             var isCancelled = SpinWait.SpinUntil(() => value.IsCancellationRequested, timeSpan);
             if (isCancelled || player.PlayerState == PlayerState.Playing || player.PlayerState == PlayerState.Paused)
             {
                 return;
             }
-
             await _lavaNode.LeaveAsync(player.VoiceChannel);
             await player.TextChannel.SendMessageAsync("Я устал молчать, я ухожу");
         }
-
-
     }
 }
