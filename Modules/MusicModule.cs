@@ -2,17 +2,10 @@
 using Discord.Addons.Hosting;
 using Discord.Commands;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Web;
 using Victoria;
 using Victoria.Enums;
-using Victoria.EventArgs;
 using Victoria.Responses.Search;
 
 namespace FoxyBot.Modules
@@ -44,6 +37,7 @@ resume - продолжить
 stop - остановить
 skip - пропустить
 remove - удалить трек из очереди (номер трека можно посмотреть командой $q)
+seek - перемотать на время. Например 1:17 - 1 минута, 17 секунд. Или 4:19:27 - 4 часа, 19 минут, 27 секунд
 clear - очистить очередь не трогая текущий трек
 shuffle - перемешать очередь
 search - s - поиск. После получения списка писать команду $play N где N - номер трека из списка (иногда ютуб решает поменять местами треки в результате и надо еще раз сделать $search)
