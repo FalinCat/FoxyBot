@@ -696,7 +696,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
 
         [Command("volume", RunMode = RunMode.Async)]
         private async Task SetVolumeAsync([Remainder] string query)
-        {           
+        {
             if (ushort.TryParse(query, out ushort value))
             {
                 if (value > 100 || value < 2)
@@ -744,7 +744,10 @@ kick - пнуть бота нафиг из канала, также пнуть �
                     jokesList.Add("Где третий ГС? ");
                     jokesList.Add("Продам пейран, кста! ");
                     jokesList.Add("Найс демедж,найс баланс! ");
-                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
+                    jokesList.Add("Оумаааай.... ");
+                    jokesList.Add("О даааа.... ");
+                    jokesList.Add("Уляля.... ");
+                    jokesList.Add("Влад,  не спать, тут еще пендахос! ");
                     break;
                 case oxyId:
                     jokesList.Add("Пипец на холодец! ");
@@ -754,6 +757,12 @@ kick - пнуть бота нафиг из канала, также пнуть �
                     jokesList.Add("Вивинг эвэрэйдж, ");
                     jokesList.Add("Жаренные булочки? ");
                     jokesList.Add("Окси, КАКТУС! ");
+                    jokesList.Add("Ладушки-оладушки. ");
+                    jokesList.Add("Сегодня я буду танчить :smiling_imp:  ");
+                    jokesList.Add("17.01 или 01:17? Что-то я запутался уже. ");
+                    jokesList.Add("Миотоническая Окси дипсит. ");
+                    
+
                     if (DateTime.Now.Hour > 20)
                     {
                         jokesList.Add("Не ем после шести!!! ");
@@ -762,20 +771,26 @@ kick - пнуть бота нафиг из канала, также пнуть �
                     {
                         jokesList.Add("Окси, иди спать! ");
                     }
-                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
+                    if (DateTime.Now.Month == 1 && DateTime.Now.Day == 17)
+                    {
+                        jokesList.Clear();
+                        jokesList.Add("С Днем Рождения, Окси!:hugging:  С нас печеньки :partying_face: :partying_face: :partying_face: ");
+                    }
                     break;
                 case ozmaId:
-                    jokesList.Add("Трында! ");
                     jokesList.Add("Фыр-фыр-фыр... ");
                     jokesList.Add("Ваше Лисичество, ");
                     jokesList.Add("Опять спекаться в хила? ");
                     jokesList.Add("Опять спекаться с хила? ");
                     jokesList.Add("Погоди, сейчас переспекаюсь в хила... ");
+                    jokesList.Add("What does the fox say? The fox say \"Трында!\". ");
                     if (DateTime.Now.Hour < 9)
                     {
-                        jokesList.Add("Так рано не спишь, все окей? ");
+                        jokesList.Clear();
+                        jokesList.Add("Ваше Лисичество, ");
+                        jokesList.Add("Так рано не спишь? ");
+                        jokesList.Add("Уже сегодня или еще вчера? ");
                     }
-                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
                 case juibId:
                     jokesList.Add("Леонид Кагутин, ");
@@ -784,52 +799,43 @@ kick - пнуть бота нафиг из канала, также пнуть �
                     jokesList.Add("Погоди, у меня место в сумке закончилось... ");
                     jokesList.Add("Погоди, у меня место в очереди закончилось... ");
                     jokesList.Add("Релеквин не трогай! (оба) ");
-                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
                 case meddoId:
                     jokesList.Add("Чё началось-то? ");
                     jokesList.Add("Я ничего не трогал! ");
+                    jokesList.Add("Уже сегодня или еще вчера? ");
                     jokesList.Add("Ты ничего не трогал? ");
-                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
                 case trimarId:
                     jokesList.Add("За Гомеза! ");
                     jokesList.Add("Вот мои 30 золотых монет. ");
-                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
                 case badfraggId:
                     jokesList.Add("Отдай, ");
                     jokesList.Add("Ваше преступление фотофиксируется. ");
                     jokesList.Add("Вас ждут в Жабском суде! ");
                     jokesList.Add("Вас ждут в Гаагском суде! ");
-                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
                 case falcaId:
                     jokesList.Add("Ништяяяк... ");
-                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
                 case kidneyId:
                     jokesList.Add("Рандом подкручен, признавайся! ");
                     jokesList.Add("35/36 ");
                     jokesList.Add("Сегодня будем бомбить? ");
-                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
                 case falinId:
                     jokesList.Add("Мой создатель, ");
                     jokesList.Add("Мой повелитель, ");
                     jokesList.Add("Милорд, ");
-                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
                 case jutaId:
                     jokesList.Add("Ели мясо оборотнИ, амброзией запивали! ");
-                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
                 case elengelId:
                     jokesList.Add("Шестизначный дипс, кста. ");
-                    jokesList.Add("Батла неоптимизирована =) ");
                     jokesList.Add("Это уже какая бутылочка коньяка? ");
                     jokesList.Add("Го винишка? ");
-                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
                 case sovaId:
                     jokesList.Add("Совень, забери!!! ");
@@ -837,32 +843,57 @@ kick - пнуть бота нафиг из канала, также пнуть �
                     jokesList.Add("Пора менять сим-карту? ");
                     jokesList.Add("Пора дипсить! ");
                     jokesList.Add("Пора переходить на 3g ");
-                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
                 case elizabethId:
                     jokesList.Add("Если есть в кармане пачка... Ой, простите, нету пачки ");
-                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
                 case minorisId:
-                    jokesList.Add("Пора править график? ");
+                    jokesList.Add("Уже пора править график? ");
                     jokesList.Add("Профессиональный занудка, ");
                     jokesList.Add("Зачем мне микрофон? И так слышно ");
-                    jokesList.Add("Ту-ту-ру ");
-                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
                 case nickId:
                     jokesList.Add("Где мой инсулин? ");
                     jokesList.Add("При чем тут паравозик Томас? ");
                     jokesList.Add(":nerd: ? ");
                     jokesList.Add(":eyes: ? ");
-
-                    await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
                     break;
                 default:
-                    await ReplyAsync(message);
                     break;
             }
 
+            if (jokesList.Count == 0)
+            {
+                await ReplyAsync(message);
+                return;
+            }
+            else if ((DateTime.Now.Month == 12 && DateTime.Now.Day == 31) || (DateTime.Now.Month == 1 && DateTime.Now.Day == 1 && DateTime.Now.Hour <= 6))
+            {
+                jokesList.Clear();
+                jokesList.Add("Сегодня все особенное! ");
+                jokesList.Add("28 ударов ножом... А ты уже нарезал оливье? ");
+                jokesList.Add("В этот особый Новый Год я сделаю вам особый подарок - скидку на Скайрим :) ");
+                jokesList.Add("Здешние пески холодные, но когда ты здесь, FoxyBot`у становится теплее :)  ");
+                jokesList.Add("Пусть дорога приведет тебя в... Так. В Эльсвеере драконы. В Скайриме вампиры. Короче сиди в этот Новый Год в норе с друзьями :) ");
+                jokesList.Add("Эх, вот бы сейчас в Аргентину... А лучше Влада туда отправить. ");
+                jokesList.Add("В этот Новый Год я желаю вам всем не забывать выходить из АОЕ!");
+                jokesList.Add("В этот Новый Год я желаю вам всем не забывать подбирать Олориму!");
+                jokesList.Add("В этот Новый Год я желаю вам всем отличного вивинг эверейдж! ");
+                jokesList.Add("В этот Новый Год я желаю вам всем что бы всегда хватало маны! ");
+                jokesList.Add("В этот Новый Год я желаю вам всем что бы всегда хватало стамины! ");
+                jokesList.Add("В этот Новый Год я желаю вам всем что бы здоровье не заканчивалось! ");
+                jokesList.Add("В этот Новый Год я желаю вам всем что бы в хард контенте всегда рядом был хил! ");
+                jokesList.Add("В этот Новый Год я желаю вам всем что бы танк не терял агр! ");
+                jokesList.Add("В этот Новый Год я желаю вам всем что бы для вас всегда были дешевые кроны! ");
+                jokesList.Add("В этот Новый Год я желаю вам всем нормально дипсящих рандомов ");
+                jokesList.Add("В этот Новый Год я желаю вам всем второго ГСа, кста! ");
+                jokesList.Add("В этот Новый Год я желаю вам всем получить скидку на пейран от Влада! ");
+                jokesList.Add("Сегодня хороший праздник! Давайте понизим уровень токсичности, залив его шампусиком)) ");
+                jokesList.Add("давайте бахнем шампусика и пойдем искать грудь королевы Айрен? ");
+
+            }
+
+            await ReplyAsync(jokesList.ElementAt(random.Next(jokesList.Count)) + message);
         }
 
 
@@ -955,7 +986,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
 
         private async Task<List<LavaTrack>?> SearchTrackUri(string query)
         {
-            
+
             var uri = new Uri(query);
             var id = HttpUtility.ParseQueryString(uri.Query).Get("v");
 
@@ -963,7 +994,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
             {
                 id = uri.LocalPath.Trim('/').Split('?')[0];
             }
-            
+
 
             if (uri.Host == "music.youtube.com")
             {
