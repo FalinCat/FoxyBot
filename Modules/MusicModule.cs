@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -79,6 +80,72 @@ kick - пнуть бота нафиг из канала, также пнуть �
                 await ReplyAsyncWithCheck("Очередь очищенна");
             }
 
+        }
+
+        [Command("Seek", RunMode = RunMode.Async)]
+        private async Task SeekAsync([Remainder] string query)
+        {
+
+
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                await ReplyAsyncWithCheck("Непонятный запрос");
+                return;
+            }
+
+            if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
+                return;
+
+            var voiceState = Context.User as IVoiceState;
+            if (!_lavaNode.HasPlayer(Context.Guild))
+            {
+                if (voiceState?.VoiceChannel == null)
+                {
+                    await ReplyAsyncWithCheck("Необходимо находиться в голосовом канале!");
+                    return;
+                }
+                if (_lavaNode.TryGetPlayer(Context.Guild, out var botChannel) && (botChannel.VoiceChannel.Id != voiceState?.VoiceChannel.Id))
+                {
+                    await ReplyAsyncWithCheck("Бот уже находится в голосовом канале: " + player.VoiceChannel.Name +
+                        ", а вы в канале - " + voiceState?.VoiceChannel);
+                    return;
+                }
+            }
+
+            var times = query.Split(':');
+            int hours = 0, minutes = 0, sec = 0;
+            switch (times.Length)
+            {
+                case 3:
+                    if (!int.TryParse(times[0], out hours) &
+                        !int.TryParse(times[1], out minutes) &
+                        !int.TryParse(times[2], out sec))
+                    {
+                        await ReplyAsyncWithCheck("Бот не понимает на какой момент надо перемотать :(");
+                    }
+
+                    break;
+                case 2:
+                    if (!int.TryParse(times[0], out minutes) &
+                        !int.TryParse(times[1], out sec))
+                        await ReplyAsyncWithCheck("Бот не понимает на какой момент надо перемотать :(");
+
+                    break;
+                case 1:
+                    if (!int.TryParse(times[0], out sec))
+                        await ReplyAsyncWithCheck("Бот не понимает на какой момент надо перемотать :(");
+                    break;
+                default:
+                    break;
+            }
+            if (minutes > 59 || sec > 59)
+            {
+                await ReplyAsync("Какой то странный формат времени... Ты часом не Меддо?");
+                return;
+            }
+            var ts = new TimeSpan(hours, minutes, sec);
+            await player.SeekAsync(ts);
+            await ReplyAsyncWithCheck($"Переметал на {query}");
         }
 
         [Command("pn", RunMode = RunMode.Async)]
