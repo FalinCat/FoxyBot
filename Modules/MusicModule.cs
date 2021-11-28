@@ -694,6 +694,41 @@ kick - пнуть бота нафиг из канала, также пнуть �
 
         }
 
+        [Command("remove", RunMode = RunMode.Async)]
+        public async Task RemoveAsync([Remainder] string number)
+        {
+            var voiceState = Context.User as IVoiceState;
+            if (voiceState?.VoiceChannel == null)
+            {
+                await ReplyAsyncWithCheck("Вы должны быть в голосовом канале");
+                return;
+            }
+
+            if (!_lavaNode.HasPlayer(Context.Guild))
+            {
+                await ReplyAsyncWithCheck("Бот не в голосовм канале");
+                return;
+            }
+
+            var player = _lavaNode.GetPlayer(Context.Guild);
+            if (voiceState.VoiceChannel != player.VoiceChannel)
+            {
+                await ReplyAsyncWithCheck("Бот находится не в ващем текущем голосовом канале");
+                return;
+            }
+
+            if (int.TryParse(number, out int n))
+            {
+                var track = player.Queue.RemoveAt(n);
+                await ReplyAsyncWithCheck($"Трек {track.Title} удален из очереди");
+            }
+            else
+            {
+                await ReplyAsyncWithCheck("Бот не распознал аргумент как номер трека");
+                await ReplyAsyncWithCheck("На всякий случай расскажу - надо написать $remove N, где вместо N написать номер трека из команды $q");
+            }
+        }
+
         [Command("volume", RunMode = RunMode.Async)]
         private async Task SetVolumeAsync([Remainder] string query)
         {
@@ -761,7 +796,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
                     jokesList.Add("Сегодня я буду танчить :smiling_imp:  ");
                     jokesList.Add("17.01 или 01:17? Что-то я запутался уже. ");
                     jokesList.Add("Миотоническая Окси дипсит. ");
-                    
+
 
                     if (DateTime.Now.Hour > 20)
                     {
