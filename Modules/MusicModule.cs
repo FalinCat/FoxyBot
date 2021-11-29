@@ -299,7 +299,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
                     var str = new StringBuilder();
                     if (player.Track != null)
                     {
-                        str.AppendLine($"сейчас играет: **{player.Track.Title}**"); 
+                        str.Append($"сейчас играет: **{player.Track.Title}** "); 
                         str.AppendLine($"Осталось [{new DateTime((player.Track.Duration - player.Track.Position).Ticks):HH:mm:ss}] " +
                         $"<{player.Track.Url}>");
                     }
