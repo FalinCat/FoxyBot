@@ -111,7 +111,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
             }
             var ts = new TimeSpan(hours, minutes, sec);
             await player.SeekAsync(ts);
-            await ReplyAsyncWithCheck($"переметал на {query}");
+            await ReplyAsyncWithCheck($"перемотал на {query}");
         }
 
 
@@ -300,7 +300,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
                     if (player.Track != null)
                     {
                         str.AppendLine($"сейчас играет: **{player.Track.Title}**"); 
-                        str.AppendLine("Осталось [{new DateTime((player.Track.Duration - player.Track.Position).Ticks):HH:mm:ss}] " +
+                        str.AppendLine($"Осталось [{new DateTime((player.Track.Duration - player.Track.Position).Ticks):HH:mm:ss}] " +
                         $"<{player.Track.Url}>");
                     }
 
