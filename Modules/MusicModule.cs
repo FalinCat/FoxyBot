@@ -20,18 +20,14 @@ namespace FoxyBot.Modules
         {
             _lavaNode = lavaNode;
             _logger = logger;
-            //_lavaNode.OnTrackStarted += _lavaNode_OnTrackStarted;
-            //_lavaNode.OnTrackEnded += _lavaNode_OnTrackEnded;
-            //_lavaNode.OnTrackStarted += _lavaNode_OnTrackStarted;
-
         }
 
         [Command("help", RunMode = RunMode.Async)]
         public async Task SearchAsyncCut()
         {
-            await ReplyAsyncWithCheck(@"
+            await ReplyAsyncWithCheck(@"рассказываю как мною пользоваться:
 play - p - поиск на ютубе
-playnext - pn - поставить трек следующим в очереди после сейчас проигрываемого
+pn - поставить трек следующим в очереди после сейчас проигрываемого
 pause - пауза
 resume - продолжить
 stop - остановить
@@ -47,34 +43,21 @@ kick - пнуть бота нафиг из канала, также пнуть �
 ");
         }
 
+
         [Command("Clear", RunMode = RunMode.Async)]
         private async Task ClearAsync()
         {
-            var voiceState = Context.User as IVoiceState;
-            if (!_lavaNode.HasPlayer(Context.Guild))
-            {
-                if (voiceState?.VoiceChannel == null)
-                {
-                    await ReplyAsyncWithCheck("Необходимо находиться в голосовом канале!");
-                    return;
-                }
-                if (_lavaNode.TryGetPlayer(Context.Guild, out var botChannel) && (botChannel.VoiceChannel.Id != voiceState?.VoiceChannel.Id))
-                {
-                    await ReplyAsyncWithCheck("Бот уже находится в голосовом канале: " + _lavaNode.GetPlayer(Context.Guild).VoiceChannel.Name +
-                        ", а вы в канале - " + voiceState?.VoiceChannel);
-                    return;
-                }
-            }
+            if (!CheckStateAsync(PlayerState.None).Result)
+                return;
 
             var player = _lavaNode?.GetPlayer(Context.Guild);
             if (player != null)
             {
                 player.Queue.Clear();
-                _logger.LogDebug("Очередь очищенна");
-                await ReplyAsyncWithCheck("Очередь очищенна");
+                await ReplyAsyncWithCheck("очередь очищенна");
             }
-
         }
+
 
         [Command("Seek", RunMode = RunMode.Async)]
         private async Task SeekAsync([Remainder] string query)
@@ -83,27 +66,16 @@ kick - пнуть бота нафиг из канала, также пнуть �
 
             if (string.IsNullOrWhiteSpace(query))
             {
-                await ReplyAsyncWithCheck("Непонятный запрос");
+                await ReplyAsyncWithCheck("совершенно непонятный запрос");
                 return;
             }
 
-            if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
-                return;
-
-            var voiceState = Context.User as IVoiceState;
-            if (!_lavaNode.HasPlayer(Context.Guild))
+            if (!CheckStateAsync(PlayerState.None).Result) return;
+            if (!_lavaNode.TryGetPlayer(Context.Guild, out var player)) return;
+            if (player.PlayerState == PlayerState.Stopped)
             {
-                if (voiceState?.VoiceChannel == null)
-                {
-                    await ReplyAsyncWithCheck("Необходимо находиться в голосовом канале!");
-                    return;
-                }
-                if (_lavaNode.TryGetPlayer(Context.Guild, out var botChannel) && (botChannel.VoiceChannel.Id != voiceState?.VoiceChannel.Id))
-                {
-                    await ReplyAsyncWithCheck("Бот уже находится в голосовом канале: " + player.VoiceChannel.Name +
-                        ", а вы в канале - " + voiceState?.VoiceChannel);
-                    return;
-                }
+                await ReplyAsyncWithCheck("я сейчас не играю музыку");
+                return;
             }
 
             var times = query.Split(':');
@@ -115,19 +87,19 @@ kick - пнуть бота нафиг из канала, также пнуть �
                         !int.TryParse(times[1], out minutes) &
                         !int.TryParse(times[2], out sec))
                     {
-                        await ReplyAsyncWithCheck("Бот не понимает на какой момент надо перемотать :(");
+                        await ReplyAsyncWithCheck("не понимаю на какой момент надо перемотать :(");
                     }
 
                     break;
                 case 2:
                     if (!int.TryParse(times[0], out minutes) &
                         !int.TryParse(times[1], out sec))
-                        await ReplyAsyncWithCheck("Бот не понимает на какой момент надо перемотать :(");
+                        await ReplyAsyncWithCheck("не понимаю на какой момент надо перемотать :(");
 
                     break;
                 case 1:
                     if (!int.TryParse(times[0], out sec))
-                        await ReplyAsyncWithCheck("Бот не понимает на какой момент надо перемотать :(");
+                        await ReplyAsyncWithCheck("не понимаю на какой момент надо перемотать :(");
                     break;
                 default:
                     break;
@@ -139,51 +111,30 @@ kick - пнуть бота нафиг из канала, также пнуть �
             }
             var ts = new TimeSpan(hours, minutes, sec);
             await player.SeekAsync(ts);
-            await ReplyAsyncWithCheck($"Переметал на {query}");
+            await ReplyAsyncWithCheck($"переметал на {query}");
         }
+
 
         [Command("pn", RunMode = RunMode.Async)]
-        private async Task PlayNextAsyncShort([Remainder] string query)
-        {
-            _ = PlayNextAsync(query);
-        }
-
-        [Command("Playnext", RunMode = RunMode.Async)]
         private async Task PlayNextAsync([Remainder] string query)
         {
             if (string.IsNullOrWhiteSpace(query))
             {
-                await ReplyAsyncWithCheck("Непонятный запрос");
+                await ReplyAsyncWithCheck("совершенно непонятный запрос");
                 return;
             }
+            if (!CheckStateAsync(PlayerState.Playing).Result) return;
 
-            var voiceState = Context.User as IVoiceState;
-            if (!_lavaNode.HasPlayer(Context.Guild))
+            try
             {
-                if (voiceState?.VoiceChannel == null)
-                {
-                    await ReplyAsyncWithCheck("Необходимо находиться в голосовом канале!");
-                    return;
-                }
-                if (_lavaNode.TryGetPlayer(Context.Guild, out var botChannel) && (botChannel.VoiceChannel.Id != voiceState?.VoiceChannel.Id))
-                {
-                    await ReplyAsyncWithCheck("Бот уже находится в голосовом канале: " + _lavaNode.GetPlayer(Context.Guild).VoiceChannel.Name +
-                        ", а вы в канале - " + voiceState?.VoiceChannel);
-                    return;
-                }
-
-                try
-                {
-                    await _lavaNode.JoinAsync(voiceState.VoiceChannel, Context.Channel as ITextChannel);
-                }
-                catch (Exception exception)
-                {
-                    await ReplyAsyncWithCheck(exception.Message);
-                    return;
-                }
+                if (Context.User is not IVoiceState voiceState) return;
+                await _lavaNode.JoinAsync(voiceState?.VoiceChannel, Context.Channel as ITextChannel);
             }
-
-
+            catch (Exception exception)
+            {
+                await ReplyAsyncWithCheck(exception.Message);
+                return;
+            }
             var result = SearchTrack(query).Result;
             await PlayMusicAsync(result, true);
 
@@ -196,55 +147,45 @@ kick - пнуть бота нафиг из канала, также пнуть �
             await PlayAsync(query);
         }
 
+
         [Command("Play", RunMode = RunMode.Async)]
         private async Task PlayAsync([Remainder] string query)
         {
             if (string.IsNullOrWhiteSpace(query))
             {
-                await ReplyAsyncWithCheck("Непонятный запрос");
+                await ReplyAsyncWithCheck("совершенно непонятный запрос");
                 return;
             }
 
-            var voiceState = Context.User as IVoiceState;
-            if (!_lavaNode.HasPlayer(Context.Guild))
-            {
-                if (voiceState?.VoiceChannel == null)
-                {
-                    await ReplyAsyncWithCheck("Необходимо находиться в голосовом канале!");
-                    return;
-                }
-                if (_lavaNode.TryGetPlayer(Context.Guild, out var botChannel) && (botChannel.VoiceChannel.Id != voiceState?.VoiceChannel.Id))
-                {
-                    await ReplyAsyncWithCheck("Бот уже находится в голосовом канале: " + _lavaNode.GetPlayer(Context.Guild).VoiceChannel.Name +
-                        ", а вы в канале - " + voiceState?.VoiceChannel);
-                    return;
-                }
+            if (!CheckStateAsync(PlayerState.Playing).Result) return;
 
-                try
-                {
-                    await _lavaNode.JoinAsync(voiceState.VoiceChannel, Context.Channel as ITextChannel);
-                }
-                catch (Exception exception)
-                {
-                    await ReplyAsyncWithCheck(exception.Message);
-                    return;
-                }
+            try
+            {
+                if (Context.User is not IVoiceState voiceState) return;
+                await _lavaNode.JoinAsync(voiceState?.VoiceChannel, Context.Channel as ITextChannel);
+            }
+            catch (Exception exception)
+            {
+                await ReplyAsyncWithCheck(exception.Message);
+                return;
             }
 
             var result = SearchTrack(query).Result;
             await PlayMusicAsync(result);
         }
 
+
         [Command("np", RunMode = RunMode.Async)]
         public async Task NowPlayingAsync()
         {
             var player = _lavaNode.GetPlayer(Context.Guild);
             var str = new StringBuilder();
-            str.Append($"{player.Track.Title} <{player.Track.Url}>");
-            str.AppendLine($" - [{new DateTime(player.Track.Position.Ticks).ToString("HH:mm:ss")}] " +
-                $"/[{new DateTime(player.Track.Duration.Ticks).ToString("HH:mm:ss")}]");
+            str.Append($"сейчас играет **{player.Track.Title}** <{player.Track.Url}>");
+            str.AppendLine($" - [{new DateTime(player.Track.Position.Ticks):HH:mm:ss}] " +
+                $"/[{new DateTime(player.Track.Duration.Ticks):HH:mm:ss}]");
             await ReplyAsyncWithCheck(str.ToString());
         }
+
 
         [Command("s", RunMode = RunMode.Async)]
         public async Task SearchAsyncCut([Remainder] string query)
@@ -252,58 +193,33 @@ kick - пнуть бота нафиг из канала, также пнуть �
             await SearchAsync(query);
         }
 
+
         [Command("Search", RunMode = RunMode.Async)]
         public async Task SearchAsync([Remainder] string query)
         {
             if (string.IsNullOrWhiteSpace(query))
             {
-                await ReplyAsyncWithCheck("Непонятный запрос");
+                await ReplyAsyncWithCheck("я получил непонятный запрос");
                 return;
             }
-            if (!_lavaNode.HasPlayer(Context.Guild))
-            {
-                if (_lavaNode.HasPlayer(Context.Guild))
-                {
-                    await ReplyAsyncWithCheck("Бот уже находится в голосовом канале");
-                    return;
-                }
 
-                var voiceState = Context.User as IVoiceState;
-                if (voiceState?.VoiceChannel == null)
-                {
-                    await ReplyAsyncWithCheck("Необходимо находиться в голосовом канале!");
-                    return;
-                }
-
-                try
-                {
-                    //await _lavaNode.JoinAsync(voiceState.VoiceChannel, Context.Channel as ITextChannel);
-                    //await ReplyAsync($"Joined {voiceState.VoiceChannel.Name}!");
-                }
-                catch (Exception exception)
-                {
-                    await ReplyAsync(exception.Message);
-                }
-            }
-
+            if (!CheckStateAsync(null).Result) return;
             if (query.Contains("https://") || query.Contains("http://"))
             {
-                await ReplyAsyncWithCheck($"Не надо искать ссылки");
+                await ReplyAsyncWithCheck($"не надо искать ссылки");
                 return;
             }
 
             var searchResponse = await _lavaNode.SearchYouTubeAsync(query);
-            if (searchResponse.Status == Victoria.Responses.Search.SearchStatus.LoadFailed ||
-                searchResponse.Status == Victoria.Responses.Search.SearchStatus.NoMatches)
+            if (searchResponse.Status == SearchStatus.LoadFailed ||
+                searchResponse.Status == SearchStatus.NoMatches)
             {
-                await ReplyAsyncWithCheck($"Ничего не найдено по запросу `{query}`.");
+                await ReplyAsyncWithCheck($"ничего не найдено по запросу `{query}`.");
                 return;
             }
 
-            //var answer = "Вот что я нашел:" + Environment.NewLine + String.Join(Environment.NewLine, searchResponse.Tracks.Select(t => t.Title).ToList());
-
             var str = new StringBuilder();
-            str.AppendLine("Вот что я нашел:");
+            str.AppendLine("вот что я нашел:");
 
             for (int i = 0; i < searchResponse.Tracks.Count; i++)
             {
@@ -313,336 +229,65 @@ kick - пнуть бота нафиг из канала, также пнуть �
             await ReplyAsyncWithCheck(str.ToString());
         }
 
-        /*[Command("Pold", RunMode = RunMode.Async)]
-        public async Task PlayAsyncCutOld([Remainder] string query)
-        {
-            await PlayAsyncOld(query);
-        }
-
-        [Command("Playold", RunMode = RunMode.Async)]
-        public async Task PlayAsyncOld([Remainder] string query)
-        {
-            var origQuery = query;
-            if (string.IsNullOrWhiteSpace(query))
-            {
-                await ReplyAsyncWithCheck("Непонятный запрос");
-                return;
-            }
-
-            var voiceState = Context.User as IVoiceState;
-
-            //var botChannel = _lavaNode.GetPlayer(Context.Guild).VoiceChannel;
-            ;
-
-            if (_lavaNode.TryGetPlayer(Context.Guild, out var botChannel) && (botChannel.VoiceChannel.Id != voiceState?.VoiceChannel.Id))
-            {
-                await ReplyAsyncWithCheck("Бот уже находится в голосовом канале: " + _lavaNode.GetPlayer(Context.Guild).VoiceChannel.Name +
-                    ", а вы в канале - " + voiceState?.VoiceChannel);
-                return;
-            }
-
-            var check = _lavaNode.HasPlayer(Context.Guild);
-            if (!_lavaNode.HasPlayer(Context.Guild))
-            {
-                if (voiceState?.VoiceChannel == null)
-                {
-                    await ReplyAsyncWithCheck("Необходимо находиться в голосовом канале!");
-                    return;
-                }
-
-                try
-                {
-                    await _lavaNode.JoinAsync(voiceState.VoiceChannel, Context.Channel as ITextChannel);
-                    //await ReplyAsync($"Joined {voiceState.VoiceChannel.Name}!");
-                }
-                catch (Exception exception)
-                {
-                    await ReplyAsyncWithCheck(exception.Message);
-                }
-            }
-
-
-
-
-
-
-
-
-            var player = _lavaNode.GetPlayer(Context.Guild);
-            int number = -1;
-            if (int.TryParse(query, out number))
-            {
-                var messages = Context.Channel.GetCachedMessages(10);
-
-                foreach (var message in messages)
-                {
-                    if (message.Content.ToLower().Contains("$search"))
-                    {
-                        query = message.Content.TrimStart("$search".ToCharArray());
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                number = -1;
-            }
-
-            string? vidId = null;
-            if (query.Contains("youtu.be") || query.Contains("youtube.com"))
-            {
-                query = query.Split(' ')[0].Replace("https://music.", "https://").Replace("&feature=share", "");
-                var uri = new Uri(query);
-                vidId = HttpUtility.ParseQueryString(uri.Query).Get("v");
-
-                if (vidId == null)
-                {
-                    vidId = uri.LocalPath.Trim('/').Split('?')[0];
-                }
-            }
-
-            Victoria.Responses.Search.SearchResponse searchResponse;
-            int index = -1;
-            if (query.Contains("list="))
-            {
-                var uri = new Uri(origQuery);
-                int.TryParse(HttpUtility.ParseQueryString(uri.Query).Get("index"), out index);
-                var list = HttpUtility.ParseQueryString(uri.Query).Get("list");
-                var v = HttpUtility.ParseQueryString(uri.Query).Get("v");
-
-                var str = "https://youtu.be/" + v + "?list=" + list + "&index=" + index;
-
-
-                searchResponse = await _lavaNode.SearchAsync(Victoria.Responses.Search.SearchType.Direct, str);
-            }
-            else if (origQuery.Contains("https://music.youtube.com"))
-            {
-                searchResponse = await _lavaNode.SearchAsync(Victoria.Responses.Search.SearchType.Direct, origQuery);
-            }
-            else
-            {
-                searchResponse = await _lavaNode.SearchYouTubeAsync(query);
-            }
-
-            LavaTrack? track = null;
-            if ((searchResponse.Status == SearchStatus.LoadFailed ||
-                searchResponse.Status == Victoria.Responses.Search.SearchStatus.NoMatches))
-            {
-                searchResponse = await _lavaNode.SearchYouTubeAsync(vidId);
-                if ((searchResponse.Status == Victoria.Responses.Search.SearchStatus.LoadFailed ||
-                    searchResponse.Status == Victoria.Responses.Search.SearchStatus.NoMatches))
-                {
-                    await ReplyAsyncWithCheck($"Ничего не найдено по запросу `{query}`.");
-                    return;
-                }
-            }
-
-            if (number != -1)
-            {
-                track = searchResponse.Tracks.ElementAtOrDefault(number);
-            }
-            else if (vidId != null)
-            {
-                track = searchResponse.Tracks.FirstOrDefault(x => x.Id == vidId);
-                if (track == null && !origQuery.Contains("list="))
-                {
-                    await ReplyAsyncWithCheck($"При поиске трека произошел фэйл. Бот не нашел именно трек по ссылке :(");
-                    return;
-                }
-            }
-            else
-            {
-                track = searchResponse.Tracks.FirstOrDefault();
-                if (track == null)
-                {
-                    await ReplyAsyncWithCheck($"При поиске трека произошел фэйл");
-                }
-            }
-
-
-
-
-            if (player.PlayerState == PlayerState.Playing || player.PlayerState == PlayerState.Paused)
-            {
-                if (!string.IsNullOrWhiteSpace(searchResponse.Playlist.Name))
-                {
-                    for (var i = searchResponse.Playlist.SelectedTrack; i < searchResponse.Tracks.Count; i++)
-                    {
-                        player.Queue.Enqueue(searchResponse.Tracks.ElementAt(i - 1));
-                    }
-
-                    await ReplyAsyncWithCheck($"В очередь добавлено {searchResponse.Tracks.Count} треков");
-                }
-                else
-                {
-                    player.Queue.Enqueue(track);
-                    await ReplyAsyncWithCheck($"Добавлено в очередь: **{track?.Title}**");
-                }
-            }
-            else
-            {
-                if (!string.IsNullOrWhiteSpace(searchResponse.Playlist.Name))
-                {
-                    int count = 0;
-                    for (var i = searchResponse.Playlist.SelectedTrack; i < searchResponse.Tracks.Count; i++)
-                    {
-                        var t = searchResponse.Tracks.ElementAt(i);
-                        if (i == searchResponse.Playlist.SelectedTrack)
-                        {
-                            await player.PlayAsync(t);
-                            await ReplyAsyncWithCheck($"Сейчас играет: {t.Title} - <{t.Url}>");
-                        }
-                        else
-                        {
-                            player.Queue.Enqueue(t);
-                        }
-                        count++;
-                    }
-
-                    await ReplyAsyncWithCheck($"В очередь добавлено {count} треков");
-                }
-                else
-                {
-                    await player.PlayAsync(track);
-                    await ReplyAsyncWithCheck($"Сейчас играет: **{player.Track.Title}**");
-                }
-            }
-        }*/
 
         [Command("Stop", RunMode = RunMode.Async)]
         public async Task StopAsync()
         {
-            var voiceState = Context.User as IVoiceState;
-            if (voiceState?.VoiceChannel == null)
-            {
-                await ReplyAsyncWithCheck("Вы должны быть в голосовом канале");
-                return;
-            }
-
-            if (!_lavaNode.HasPlayer(Context.Guild))
-            {
-                await ReplyAsyncWithCheck("Бот уже не в голосовм канале");
-                return;
-            }
+            if (!CheckStateAsync(PlayerState.Stopped).Result) return;
 
             var player = _lavaNode.GetPlayer(Context.Guild);
-            if (voiceState.VoiceChannel != player.VoiceChannel)
-            {
-                await ReplyAsyncWithCheck("Бот находится не в ващем текущем голосовом канале");
-                return;
-            }
 
-            if (player.PlayerState == PlayerState.Paused || player.PlayerState == PlayerState.Stopped)
+            if (player.PlayerState == PlayerState.Paused)
             {
-                await ReplyAsyncWithCheck($"Музыка и так не играет");
-                return;
+                await ReplyAsyncWithCheck("музыка была на паузе, я ее остановил и очистил очередь");
             }
-
             player.Queue.Clear();
             await player.StopAsync();
-            //await voiceState.VoiceChannel.DisconnectAsync();
         }
+
 
         [Command("Pause", RunMode = RunMode.Async)]
         public async Task PauseAsync()
         {
-            var voiceState = Context.User as IVoiceState;
-            if (voiceState?.VoiceChannel == null)
-            {
-                await ReplyAsyncWithCheck("Вы должны быть в голосовом канале");
-                return;
-            }
+            if (!CheckStateAsync(PlayerState.Paused).Result) return;
 
-            if (!_lavaNode.HasPlayer(Context.Guild))
-            {
-                await ReplyAsyncWithCheck("Бот уже не в голосовм канале");
-                return;
-            }
 
             var player = _lavaNode.GetPlayer(Context.Guild);
-            if (voiceState.VoiceChannel != player.VoiceChannel)
-            {
-                await ReplyAsyncWithCheck("Бот находится не в ващем текущем голосовом канале");
-                return;
-            }
-
-            if (player.PlayerState == PlayerState.Paused || player.PlayerState == PlayerState.Stopped)
-            {
-                await ReplyAsyncWithCheck($"Музыка и так не играет");
-                return;
-            }
-
             await player.PauseAsync();
-            await ReplyAsyncWithCheck($"Ставим паузу... Время сходить за печеньками?");
+            await ReplyAsyncWithCheck("ставим музыку паузу... Время сходить за печеньками?");
         }
+
 
         [Command("Resume", RunMode = RunMode.Async)]
         public async Task ResumeAsync()
         {
-            var voiceState = Context.User as IVoiceState;
-            if (voiceState?.VoiceChannel == null)
-            {
-                await ReplyAsyncWithCheck("Вы должны быть в голосовом канале");
-                return;
-            }
-
-            if (!_lavaNode.HasPlayer(Context.Guild))
-            {
-                await ReplyAsyncWithCheck("Бот уже не в голосовм канале");
-                return;
-            }
-
+            if (!CheckStateAsync(PlayerState.None).Result) return;
             var player = _lavaNode.GetPlayer(Context.Guild);
-            if (voiceState.VoiceChannel != player.VoiceChannel)
+            if (player.PlayerState != PlayerState.Paused)
             {
-                await ReplyAsyncWithCheck("Бот находится не в ващем текущем голосовом канале");
+                await ReplyAsyncWithCheck($"я не на паузе");
                 return;
             }
-
-            if (player.PlayerState == PlayerState.Playing)
-            {
-                await ReplyAsyncWithCheck($"Музыка и так играет");
-                return;
-            }
-
             await player.ResumeAsync();
-            await ReplyAsyncWithCheck($"Продолжаем воспроизведение");
+            await ReplyAsyncWithCheck($"продолжаю воспроизведение");
         }
+
 
         [Command("Skip", RunMode = RunMode.Async)]
         public async Task SkipAsync()
         {
-            var voiceState = Context.User as IVoiceState;
-            if (voiceState?.VoiceChannel == null)
-            {
-                await ReplyAsyncWithCheck("Вы должны быть в голосовом канале");
-                return;
-            }
-
-            if (!_lavaNode.HasPlayer(Context.Guild))
-            {
-                await ReplyAsyncWithCheck("Бот уже не в голосовм канале");
-                return;
-            }
+            if (!CheckStateAsync(PlayerState.None).Result) return;
 
             var player = _lavaNode.GetPlayer(Context.Guild);
-            if (voiceState.VoiceChannel != player.VoiceChannel)
-            {
-                await ReplyAsyncWithCheck("Бот находится не в ващем текущем голосовом канале");
-                return;
-            }
-
             if (player.Queue.Count == 0)
             {
-                //await ReplyAsync("Очередь треков пустая");
                 await player.StopAsync();
                 return;
             }
 
             await player.SkipAsync();
-            //await ReplyAsyncWithCheck($"Пропускаем трек... Сейчас играет **{player.Track.Title}**");
-
         }
+
 
         [Command("q", RunMode = RunMode.Async)]
         public async Task GetQueueAsync()
@@ -654,14 +299,14 @@ kick - пнуть бота нафиг из канала, также пнуть �
                     var str = new StringBuilder();
                     if (player.Track != null)
                     {
-                        str.AppendLine($"Сейчас играет: {player.Track.Title} Осталось [{new DateTime((player.Track.Duration - player.Track.Position).Ticks):HH:mm:ss}] " +
+                        str.AppendLine($"сейчас играет: **{player.Track.Title}**"); 
+                        str.AppendLine("Осталось [{new DateTime((player.Track.Duration - player.Track.Position).Ticks):HH:mm:ss}] " +
                         $"<{player.Track.Url}>");
                     }
 
-
                     for (int i = 0; i < player.Queue.Count; i++)
                     {
-                        str.AppendLine($"{i} - {player.Queue.ElementAt(i).Title} [{new DateTime(player.Queue.ElementAt(i).Duration.Ticks):HH:mm:ss}] " +
+                        str.AppendLine($"{i} - **{player.Queue.ElementAt(i).Title}** [{new DateTime(player.Queue.ElementAt(i).Duration.Ticks):HH:mm:ss}] " +
                             $"<{ player.Queue.ElementAt(i).Url}>");
 
                         if (i >= 10)
@@ -670,21 +315,15 @@ kick - пнуть бота нафиг из канала, также пнуть �
                             break;
                         }
                     }
-                    //var totalTime = player.Queue.Sum(x => x.Duration.Ticks);
-
                     var q = new List<TimeSpan>();
                     q.AddRange(player.Queue.Select(x => x.Duration).ToList());
                     q.Add(player.Track.Duration - player.Track.Position);
-
                     var totalTime = q.Aggregate
                                     (TimeSpan.Zero,
                                     (sumSoFar, nextMyObject) => sumSoFar + nextMyObject);
 
 
                     str.AppendLine("Всего времени плейлиста: **" + new DateTime(totalTime.Ticks).ToString("HH:mm:ss") + "**");
-
-
-                    //var queue = "Будущие треки:" + Environment.NewLine + String.Join(Environment.NewLine, player.Queue.Select(x => x.Title));
                     await ReplyAsyncWithCheck(str.ToString());
                 }
             }
@@ -696,118 +335,80 @@ kick - пнуть бота нафиг из канала, также пнуть �
         [Command("Kick", RunMode = RunMode.Async)]
         private async Task KickAsync()
         {
+            if (!CheckStateAsync(PlayerState.None).Result) return;
+
+            if (Context.User is not IVoiceState voiceState) return;
             var player = _lavaNode.GetPlayer(Context.Guild);
-
-            var voiceState = Context.User as IVoiceState;
-            if (voiceState?.VoiceChannel == null)
-            {
-                await ReplyAsyncWithCheck("Вы должны быть в голосовом канале");
-                return;
-            }
-
-            if (!_lavaNode.HasPlayer(Context.Guild))
-            {
-                await ReplyAsyncWithCheck("Бот уже не в голосовм канале");
-                return;
-            }
-
-            if (voiceState.VoiceChannel != player.VoiceChannel)
-            {
-                await ReplyAsyncWithCheck("Бот находится не в ващем текущем голосовом канале");
-                return;
-            }
             player.Queue.Clear();
             await player.StopAsync();
             await _lavaNode.LeaveAsync(voiceState.VoiceChannel);
             await voiceState.VoiceChannel.DisconnectAsync();
-            await ReplyAsyncWithCheck("Бот получил пинок под зад и удалился");
+            await ReplyAsyncWithCheck("бот получил пинок под зад и удалился");
 
         }
+
 
         [Command("shuffle", RunMode = RunMode.Async)]
         private async Task ShuffleAsync()
         {
-            var voiceState = Context.User as IVoiceState;
-            if (voiceState?.VoiceChannel == null)
-            {
-                await ReplyAsyncWithCheck("Вы должны быть в голосовом канале");
-                return;
-            }
-
-            if (!_lavaNode.HasPlayer(Context.Guild))
-            {
-                await ReplyAsyncWithCheck("Бот не в голосовом канале");
-                return;
-            }
+            if (!CheckStateAsync(PlayerState.None).Result) return;
 
             var player = _lavaNode.GetPlayer(Context.Guild);
-            if (voiceState.VoiceChannel != player.VoiceChannel)
-            {
-                await ReplyAsyncWithCheck("Бот находится не в ващем текущем голосовом канале");
-                return;
-            }
-
             if (player.Queue.Count > 1)
             {
                 player.Queue.Shuffle();
-                await ReplyAsyncWithCheck("Перемешал очередь в случайном порядке!");
+                await ReplyAsyncWithCheck("я перемешал очередь в случайном порядке!");
             }
-
-
+            else
+            {
+                await ReplyAsyncWithCheck("очередь пустая, там нечего перемешивать");
+            }
         }
+
 
         [Command("remove", RunMode = RunMode.Async)]
         public async Task RemoveAsync([Remainder] string number)
         {
-            var voiceState = Context.User as IVoiceState;
-            if (voiceState?.VoiceChannel == null)
-            {
-                await ReplyAsyncWithCheck("Вы должны быть в голосовом канале");
-                return;
-            }
-
-            if (!_lavaNode.HasPlayer(Context.Guild))
-            {
-                await ReplyAsyncWithCheck("Бот не в голосовм канале");
-                return;
-            }
+            if (!CheckStateAsync(PlayerState.None).Result) return;
 
             var player = _lavaNode.GetPlayer(Context.Guild);
-            if (voiceState.VoiceChannel != player.VoiceChannel)
-            {
-                await ReplyAsyncWithCheck("Бот находится не в ващем текущем голосовом канале");
-                return;
-            }
-
             if (int.TryParse(number, out int n))
             {
+                if (n > player.Queue.Count || n <= -1)
+                {
+                    await ReplyAsyncWithCheck($"такого трека нет в очереди");
+                    return;
+                }
                 var track = player.Queue.RemoveAt(n);
-                await ReplyAsyncWithCheck($"Трек **{track.Title}** удален из очереди");
+                await ReplyAsyncWithCheck($"трек **{track.Title}** удален из очереди");
             }
             else
             {
-                await ReplyAsyncWithCheck("Бот не распознал аргумент как номер трека");
-                await ReplyAsyncWithCheck("На всякий случай расскажу - надо написать $remove N, где вместо N написать номер трека из команды $q");
+                await ReplyAsyncWithCheck("бот не распознал аргумент как номер трека");
+                await ReplyAsyncWithCheck("на всякий случай расскажу - надо написать $remove N, где вместо N написать номер трека из команды $q");
             }
         }
+
 
         [Command("volume", RunMode = RunMode.Async)]
         private async Task SetVolumeAsync([Remainder] string query)
         {
+            if (!CheckStateAsync(PlayerState.None).Result) return;
+
             if (ushort.TryParse(query, out ushort value))
             {
                 if (value > 100 || value < 2)
                 {
-                    await ReplyAsyncWithCheck($"Громкость надо ставить в пределах от 2 до 100 ");
+                    await ReplyAsyncWithCheck("громкость надо ставить в пределах от 2 до 100 ");
                     return;
                 }
                 var player = _lavaNode?.GetPlayer(Context.Guild);
                 await player.UpdateVolumeAsync(value);
-                await ReplyAsyncWithCheck($"Громкость установлена на " + value);
+                await ReplyAsyncWithCheck($"громкость установлена на " + value);
             }
             else
             {
-                await ReplyAsyncWithCheck($"Параметр надо ставить циферкой :) ");
+                await ReplyAsyncWithCheck($"параметр надо ставить циферкой :) ");
             }
         }
 
@@ -840,30 +441,25 @@ kick - пнуть бота нафиг из канала, также пнуть �
                     jokesList.Add("Владдудос, ");
                     jokesList.Add("Где третий ГС? ");
                     jokesList.Add("Продам пейран, кста! ");
-                    jokesList.Add("Найс демедж,найс баланс! ");
+                    jokesList.Add("Найс демедж,найс баланс, ");
                     jokesList.Add("Оумаааай.... ");
                     jokesList.Add("О даааа.... ");
                     jokesList.Add("Уляля.... ");
                     jokesList.Add("Влад,  не спать, тут еще пендахос! ");
                     break;
                 case oxyId:
-                    jokesList.Add("Пипец на холодец! ");
+                    jokesList.Add("Пипец на холодец! Окси, ");
                     jokesList.Add("Мяяяя.... ");
-                    jokesList.Add("Я надеюсь ты сейчас в шоколадном бубличке? ");
+                    jokesList.Add("Я надеюсь ты сейчас в шоколадном бубличке? А то ");
                     jokesList.Add("Простите, ");
                     jokesList.Add("Вивинг эвэрэйдж, ");
-                    jokesList.Add("Жаренные булочки? ");
-                    jokesList.Add("Окси, КАКТУС! ");
-                    jokesList.Add("Ладушки-оладушки. ");
-                    jokesList.Add("Сегодня я буду танчить :smiling_imp:  ");
-                    jokesList.Add("17.01 или 01:17? Что-то я запутался уже. ");
+                    jokesList.Add("Жаренные булочки, ");
+                    jokesList.Add("Окси, КАКТУС! Срочно, а то ");
+                    jokesList.Add("Ладушки-оладушки, ");
+                    jokesList.Add("Сегодня я буду танчить :smiling_imp: и к тому же ");
+                    jokesList.Add("17.01 или 01:17? Что-то я запутался уже. А пока что ");
                     jokesList.Add("Миотоническая Окси дипсит. ");
 
-
-                    if (DateTime.Now.Hour > 20)
-                    {
-                        jokesList.Add("Не ем после шести!!! ");
-                    }
                     if (DateTime.Now.Hour > 22)
                     {
                         jokesList.Add("Окси, иди спать! ");
@@ -872,6 +468,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
                     {
                         jokesList.Clear();
                         jokesList.Add("С Днем Рождения, Окси!:hugging:  С нас печеньки :partying_face: :partying_face: :partying_face: ");
+                        jokesList.Add("С Днем Рождения, Окси!:hugging: ");
                     }
                     break;
                 case ozmaId:
@@ -891,11 +488,10 @@ kick - пнуть бота нафиг из канала, также пнуть �
                     break;
                 case juibId:
                     jokesList.Add("Леонид Кагутин, ");
-                    jokesList.Add("ММ сегодня не лагает? ");
-                    jokesList.Add("Леонид Кагутин, продажи уже просчитались? ");
+                    jokesList.Add("ММ сегодня не лагает, ");
+                    jokesList.Add("Леонид Кагутин, продажи уже просчитались, ");
                     jokesList.Add("Погоди, у меня место в сумке закончилось... ");
                     jokesList.Add("Погоди, у меня место в очереди закончилось... ");
-                    jokesList.Add("Релеквин не трогай! (оба) ");
                     break;
                 case meddoId:
                     jokesList.Add("Чё началось-то? ");
@@ -919,7 +515,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
                 case kidneyId:
                     jokesList.Add("Рандом подкручен, признавайся! ");
                     jokesList.Add("35/36 ");
-                    jokesList.Add("Сегодня будем бомбить? ");
+                    jokesList.Add("Сегодня будем бомбить, ");
                     break;
                 case falinId:
                     jokesList.Add("Мой создатель, ");
@@ -930,41 +526,35 @@ kick - пнуть бота нафиг из канала, также пнуть �
                     jokesList.Add("Ели мясо оборотнИ, амброзией запивали! ");
                     break;
                 case elengelId:
-                    jokesList.Add("Шестизначный дипс, кста. ");
+                    jokesList.Add("Шестизначный дипс, кста, ");
                     jokesList.Add("Это уже какая бутылочка коньяка? ");
                     jokesList.Add("Го винишка? ");
                     break;
                 case sovaId:
                     jokesList.Add("Совень, забери!!! ");
-                    jokesList.Add("Выключите интернет Сове! ");
                     jokesList.Add("Пора менять сим-карту? ");
                     jokesList.Add("Пора дипсить! ");
-                    jokesList.Add("Пора переходить на 3g ");
+                    jokesList.Add("Пора переходить на 3g, ");
                     break;
                 case elizabethId:
-                    jokesList.Add("Если есть в кармане пачка... Ой, простите, нету пачки ");
+                    jokesList.Add("Если есть в кармане пачка... Ой, простите, нету пачки, ");
                     break;
                 case minorisId:
                     jokesList.Add("Уже пора править график? ");
                     jokesList.Add("Профессиональный занудка, ");
-                    jokesList.Add("Зачем мне микрофон? И так слышно ");
+                    jokesList.Add("Зачем микрофон? И так слышно, ");
                     break;
                 case nickId:
                     jokesList.Add("Где мой инсулин? ");
-                    jokesList.Add("При чем тут паравозик Томас? ");
                     jokesList.Add(":nerd: ? ");
                     jokesList.Add(":eyes: ? ");
                     break;
                 default:
+                    jokesList.Add("Норный житель, ");
+                    jokesList.Add("Человек, ");
                     break;
             }
-
-            if (jokesList.Count == 0)
-            {
-                await ReplyAsync(message);
-                return;
-            }
-            else if ((DateTime.Now.Month == 12 && DateTime.Now.Day == 31) || (DateTime.Now.Month == 1 && DateTime.Now.Day == 1 && DateTime.Now.Hour <= 6))
+            if ((DateTime.Now.Month == 12 && DateTime.Now.Day == 31) || (DateTime.Now.Month == 1 && DateTime.Now.Day == 1 && DateTime.Now.Hour <= 6))
             {
                 jokesList.Clear();
                 jokesList.Add("Сегодня все особенное! ");
@@ -999,11 +589,12 @@ kick - пнуть бота нафиг из канала, также пнуть �
             await PlayMusicAsync(new List<LavaTrack>(new[] { track }));
         }
 
+
         private async Task PlayMusicAsync(List<LavaTrack> trackList, bool playNext = false)
         {
             if (trackList.Count == 0)
             {
-                await ReplyAsyncWithCheck($"К сожалению у меня не получилось найти нужное :pleading_face: ");
+                await ReplyAsyncWithCheck("к сожалению у меня не получилось найти нужное :pleading_face: ");
                 return;
             }
 
@@ -1019,7 +610,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
                         player?.Queue.Enqueue(track);
                     }
 
-                    await ReplyAsyncWithCheck($"Добавлено в очередь -> **{trackList.Count} треков**");
+                    await ReplyAsyncWithCheck($"добавил в очередь -> **{trackList.Count} треков**");
                 }
                 else if (trackList.Count == 1)
                 {
@@ -1039,7 +630,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
                         player.Queue.Enqueue(trackList.First());
                     }
 
-                    await ReplyAsyncWithCheck($"Добавлено в очередь -> **{trackList.First().Title}**");
+                    await ReplyAsyncWithCheck($"добавил в очередь -> **{trackList.First().Title}**");
                 }
 
                 return;
@@ -1047,7 +638,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
             else
             {
                 await player.PlayAsync(trackList.ElementAt(0));
-                await ReplyAsyncWithCheck($"Сейчас играет -> **{trackList.ElementAt(0).Title}**");
+                await ReplyAsyncWithCheck($"сейчас играет -> **{trackList.ElementAt(0).Title}**");
                 trackList.RemoveAt(0);
                 if (trackList.Count == 0)
                     return;
@@ -1056,10 +647,11 @@ kick - пнуть бота нафиг из канала, также пнуть �
                     player?.Queue.Enqueue(track);
                 }
 
-                await ReplyAsyncWithCheck($"Добавлено в очередь -> **{trackList.Count} треков**");
+                await ReplyAsyncWithCheck($"добавлено в очередь -> **{trackList.Count} треков**");
 
             }
         }
+
 
         private async Task<List<LavaTrack>> SearchTrack(string query)
         {
@@ -1069,7 +661,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
             {
                 trackList = await SearchTrackUri(query);
             }
-            else if (int.TryParse(query, out var number))
+            else if (ushort.TryParse(query, out var number))
             {
                 trackList = await SearchTrackNumber(number);
             }
@@ -1080,6 +672,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
 
             return trackList;
         }
+
 
         private async Task<List<LavaTrack>?> SearchTrackUri(string query)
         {
@@ -1176,6 +769,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
             return new List<LavaTrack>();
         }
 
+
         private async Task<List<LavaTrack>> SearchTrackString(string query)
         {
             var list = new List<LavaTrack>();
@@ -1198,28 +792,119 @@ kick - пнуть бота нафиг из канала, также пнуть �
             return list;
         }
 
-        private async Task<List<LavaTrack>> SearchTrackNumber(int number)
+
+        private async Task<List<LavaTrack>> SearchTrackNumber(ushort number)
         {
-            var messages = Context.Channel.GetCachedMessages(10);
+            var messages = Context.Channel.GetCachedMessages(50);
             string query = "";
+            var dict = new Dictionary<ushort, string>();
 
             foreach (var message in messages)
             {
-                if (message.Content.ToLower().Contains("$search"))
+                if (message.Content.Contains("вот что я нашел:") && message.Author.Id == 887228176135249980)
                 {
-                    query = message.Content.TrimStart("$search".ToCharArray());
+                    var str = message.Content;
+                    var allLines = str.Split(Environment.NewLine).ToList();
+                    allLines.RemoveAt(0);
+                    
+                    foreach (string line in allLines)
+                    {
+                        var n = new String(line.TakeWhile(Char.IsDigit).ToArray());
+                        if (!ushort.TryParse(n, out var id))
+                        {
+                            _logger.LogDebug($"Не получилось преобразовать строку {n} в число");
+                            continue;
+                        }
+                        var name = line.Substring(n.Length + 3, line.Length - (n.Length + 3) - 11);
+                        dict.Add(id, name);
+                    }
                     break;
                 }
             }
-            if (query != "")
-            {
-                var res = await _lavaNode.SearchAsync(SearchType.YouTube, query);
-                var trackList = new List<LavaTrack>(new[] { res.Tracks.ElementAt(number) });
+            query = dict[number];
+            var res = await _lavaNode.SearchAsync(SearchType.YouTube, query);
 
-                return trackList;
+            foreach (var t in res.Tracks)
+            {
+                if (t.Title == query)
+                {
+                    return new List<LavaTrack>(new[] { t });
+                }
+            }
+            await ReplyAsyncWithCheck("по какой-то причине на этот ютуб не нашел трек с именно таким названием, я поставлю наиболее релевантный ответ");
+            var track = res.Tracks.FirstOrDefault();
+            if (track != null)
+                return new List<LavaTrack>(new[] { track });
+            return new List<LavaTrack>(); ;
+        }
+
+
+        // Передаем то состояние, в которое хотим перевести плеер
+        private async Task<bool> CheckStateAsync(PlayerState? needPlayerState = null)
+        {
+            var voiceState = Context.User as IVoiceState;                                  // Состояние пользователя
+            _lavaNode.TryGetPlayer(Context.Guild, out var player);                        // Состояние бота
+            if (voiceState?.VoiceChannel == null)
+            {
+                await ReplyAsyncWithCheck("необходимо находиться в голосовом канале!");
+                return false;
             }
 
-            return new List<LavaTrack>();
+            //Проверим что бот не в другом канале
+            if (needPlayerState == PlayerState.Playing)
+            {
+                if (player != null && player?.VoiceChannel.Id != voiceState?.VoiceChannel.Id)
+                {
+                    await ReplyAsyncWithCheck("бот уже находится в голосовом канале: " + _lavaNode.GetPlayer(Context.Guild).VoiceChannel.Name +
+                                                ", а вы в канале - " + voiceState?.VoiceChannel);
+                    return false;
+                }
+
+            }
+            // Проверим что пользователь в голосовом канале, бот не в другом канале и бот уже не молчит
+            else if (needPlayerState == PlayerState.Stopped || needPlayerState == PlayerState.Paused)
+            {
+                if (player == null)
+                {
+                    await ReplyAsyncWithCheck("я не в голосовом канале вообще!");
+                    return false;
+                }
+                if (player.VoiceChannel.Id != voiceState?.VoiceChannel.Id)
+                {
+                    await ReplyAsyncWithCheck("я уже нахожусь в голосовом канале: " + _lavaNode.GetPlayer(Context.Guild).VoiceChannel.Name +
+                                                ", а вы в канале - " + voiceState?.VoiceChannel);
+                    return false;
+                }
+                if (needPlayerState == PlayerState.Stopped && player.PlayerState == PlayerState.Paused)
+                {
+                    return true;
+                }
+                if (player.PlayerState == PlayerState.Stopped || player.PlayerState == PlayerState.Paused || player.PlayerState == PlayerState.None)
+                {
+                    await ReplyAsyncWithCheck("я и так молчу!");
+                    return false;
+                }
+            }
+            else if (needPlayerState == PlayerState.None) // Просто проверим что пользователь в одном канале с ботом
+            {
+                if (player == null)
+                {
+                    await ReplyAsyncWithCheck("я не в голосовом канале вообще!");
+                    return false;
+                }
+                if (player.VoiceChannel.Id != voiceState?.VoiceChannel.Id)
+                {
+                    await ReplyAsyncWithCheck("я уже нахожусь в голосовом канале: " + _lavaNode.GetPlayer(Context.Guild).VoiceChannel.Name +
+                                                ", а вы в канале - " + voiceState?.VoiceChannel);
+                    return false;
+                }
+            }
+            else if (needPlayerState == null)
+            {
+                return true;
+            }
+
+            return true;
         }
     }
 }
