@@ -821,6 +821,11 @@ kick - пнуть бота нафиг из канала, также пнуть �
                     break;
                 }
             }
+            if (number < 0 || number > dict.Count - 1)
+            {
+                await ReplyAsyncWithCheck("я таких цифр не говорил!");
+                return new List<LavaTrack>();
+            }
             query = dict[number];
             var res = await _lavaNode.SearchAsync(SearchType.YouTube, query);
 
@@ -835,7 +840,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
             var track = res.Tracks.FirstOrDefault();
             if (track != null)
                 return new List<LavaTrack>(new[] { track });
-            return new List<LavaTrack>(); ;
+            return new List<LavaTrack>();
         }
 
 
