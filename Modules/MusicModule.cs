@@ -170,7 +170,43 @@ kick - пнуть бота нафиг из канала, также пнуть �
                 return;
             }
 
-            var result = SearchTrack(query).Result;
+            if (Uri.TryCreate(query, UriKind.RelativeOrAbsolute, out var uri))
+            {
+                var id = HttpUtility.ParseQueryString(uri.Query).Get("v");
+                var list = HttpUtility.ParseQueryString(uri.Query).Get("list");
+                if (list != null)
+                {
+                    await ReplyAsyncWithCheck("тут ссылка на плейлист, но это команда для добавления одного трека. Если надо добавить плейлист - используйте $pl (это буква л английская)");
+                }
+            }
+
+            var result = SearchTrack(query, false).Result;
+            await PlayMusicAsync(result);
+        }
+
+        [Command("Pl", RunMode = RunMode.Async)]
+        private async Task PlayPlaylistAsync([Remainder] string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                await ReplyAsyncWithCheck("совершенно непонятный запрос");
+                return;
+            }
+
+            if (!CheckStateAsync(PlayerState.Playing).Result) return;
+
+            try
+            {
+                if (Context.User is not IVoiceState voiceState) return;
+                await _lavaNode.JoinAsync(voiceState?.VoiceChannel, Context.Channel as ITextChannel);
+            }
+            catch (Exception exception)
+            {
+                await ReplyAsyncWithCheck(exception.Message);
+                return;
+            }
+
+            var result = SearchTrack(query, true).Result;
             await PlayMusicAsync(result);
         }
 
@@ -299,7 +335,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
                     var str = new StringBuilder();
                     if (player.Track != null)
                     {
-                        str.Append($"сейчас играет: **{player.Track.Title}** "); 
+                        str.Append($"сейчас играет: **{player.Track.Title}** ");
                         str.AppendLine($"Осталось [{new DateTime((player.Track.Duration - player.Track.Position).Ticks):HH:mm:ss}] " +
                         $"<{player.Track.Url}>");
                     }
@@ -402,7 +438,9 @@ kick - пнуть бота нафиг из канала, также пнуть �
                     await ReplyAsyncWithCheck("громкость надо ставить в пределах от 2 до 100 ");
                     return;
                 }
-                var player = _lavaNode?.GetPlayer(Context.Guild);
+                //var player = _lavaNode?.GetPlayer(Context.Guild);
+                if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
+                    return;
                 await player.UpdateVolumeAsync(value);
                 await ReplyAsyncWithCheck($"громкость установлена на " + value);
             }
@@ -576,7 +614,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
                 jokesList.Add("В этот Новый Год я желаю вам всем второго ГСа, кста! ");
                 jokesList.Add("В этот Новый Год я желаю вам всем получить скидку на пейран от Влада! ");
                 jokesList.Add("Сегодня хороший праздник! Давайте понизим уровень токсичности, залив его шампусиком)) ");
-                jokesList.Add("давайте бахнем шампусика и пойдем искать грудь королевы Айрен? ");
+                jokesList.Add("Давайте бахнем шампусика и пойдем искать грудь королевы Айрен? ");
 
             }
 
@@ -653,13 +691,13 @@ kick - пнуть бота нафиг из канала, также пнуть �
         }
 
 
-        private async Task<List<LavaTrack>> SearchTrack(string query)
+        private async Task<List<LavaTrack>> SearchTrack(string query, bool allowPlaylist = false)
         {
-            List<LavaTrack> trackList = new List<LavaTrack>();
+            List<LavaTrack>? trackList = new List<LavaTrack>();
 
             if (query.Contains("youtu.be") || query.Contains("youtube.com"))
             {
-                trackList = await SearchTrackUri(query);
+                trackList = await SearchTrackUri(query, allowPlaylist);
             }
             else if (ushort.TryParse(query, out var number))
             {
@@ -674,18 +712,53 @@ kick - пнуть бота нафиг из канала, также пнуть �
         }
 
 
-        private async Task<List<LavaTrack>?> SearchTrackUri(string query)
+        private async Task<List<LavaTrack>?> SearchTrackUri(string query, bool allowPlaylist = false)
         {
 
             var uri = new Uri(query);
             var id = HttpUtility.ParseQueryString(uri.Query).Get("v");
+            var list = HttpUtility.ParseQueryString(uri.Query).Get("list");
+            var index = HttpUtility.ParseQueryString(uri.Query).Get("index");
 
             if (id == null)
             {
                 id = uri.LocalPath.Trim('/').Split('?')[0];
             }
 
+            var searchString = "";
+            if (allowPlaylist)
+                searchString = "https://youtu.be/" + id + "?list=" + list + "&index=" + index;
+            else
+                searchString = $"http://{uri.Host}/watch?v={id}";
 
+            var res = await _lavaNode.SearchAsync(SearchType.Direct, searchString);
+            if (res.Status == SearchStatus.LoadFailed || res.Status == SearchStatus.NoMatches)
+                res = await _lavaNode.SearchAsync(SearchType.YouTube, searchString);
+            if (res.Status == SearchStatus.LoadFailed)
+                await ReplyAsyncWithCheck($"Поиск завершился ошибкой: {res.Exception.Message}");
+
+            if (allowPlaylist)
+            {
+                var tracks = res.Tracks.ToList();
+                return tracks.GetRange(res.Playlist.SelectedTrack, res.Tracks.Count - res.Playlist.SelectedTrack);
+            }
+            else
+            {
+                var track = new List<LavaTrack>();
+                foreach (var item in res.Tracks)
+                {
+                    if (item.Id == id)
+                    {
+                        track.Add(item);
+                        break;
+                    }
+                }
+
+                return track;
+            }
+
+
+            /*
             if (uri.Host == "music.youtube.com")
             {
                 var searchString = $"http://{uri.Host}/watch?v={id}";
@@ -767,6 +840,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
             }
 
             return new List<LavaTrack>();
+            */
         }
 
 
@@ -806,7 +880,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
                     var str = message.Content;
                     var allLines = str.Split(Environment.NewLine).ToList();
                     allLines.RemoveAt(0);
-                    
+
                     foreach (string line in allLines)
                     {
                         var n = new String(line.TakeWhile(Char.IsDigit).ToArray());
