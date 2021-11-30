@@ -28,6 +28,7 @@ namespace FoxyBot.Modules
             await ReplyAsyncWithCheck(@"рассказываю как мною пользоваться:
 play - p - поиск на ютубе
 pn - поставить трек следующим в очереди после сейчас проигрываемого
+pl - добавить к воспроизведению плейлист
 pause - пауза
 resume - продолжить
 stop - остановить
@@ -721,12 +722,10 @@ kick - пнуть бота нафиг из канала, также пнуть �
             var index = HttpUtility.ParseQueryString(uri.Query).Get("index");
 
             if (id == null)
-            {
                 id = uri.LocalPath.Trim('/').Split('?')[0];
-            }
 
             var searchString = "";
-            if (allowPlaylist)
+            if (allowPlaylist && list != null)
                 searchString = "https://youtu.be/" + id + "?list=" + list + "&index=" + index;
             else
                 searchString = $"http://{uri.Host}/watch?v={id}";
