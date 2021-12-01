@@ -170,8 +170,8 @@ kick - пнуть бота нафиг из канала, также пнуть �
                 await ReplyAsyncWithCheck(exception.Message);
                 return;
             }
-
-            if (Uri.TryCreate(query, UriKind.RelativeOrAbsolute, out var uri))
+            
+            if (Uri.TryCreate(query, UriKind.Absolute, out Uri uri) && uri.Scheme == Uri.UriSchemeHttps)
             {
                 var id = HttpUtility.ParseQueryString(uri.Query).Get("v");
                 var list = HttpUtility.ParseQueryString(uri.Query).Get("list");
