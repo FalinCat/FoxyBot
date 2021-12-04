@@ -100,6 +100,29 @@ namespace FoxyBot.Services
                         await arg.Player.TextChannel.SendMessageAsync($"{arg.Reason} -> **{arg.Track.Title}**" + Environment.NewLine +
                                 $"Сейчас играет: **{player.Track.Title}** <{player.Track.Url}>");
                     }
+                    else if (player.Track == null && player.Queue.Count >= 1)// Если очередь не скипали, а она сама продвигается
+                    {
+                        if (!player.Queue.TryDequeue(out var queueable))
+                        {
+                            await arg.Player.TextChannel.SendMessageAsync($"{arg.Reason} -> {arg.Track.Title} и это конец очереди");
+                            _ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(timeout));
+                            return;
+                        }
+
+                        if (!(queueable is LavaTrack track))
+                        {
+                            await player.TextChannel.SendMessageAsync("Зачем мне это подсунули?)).");
+                            _ = InitiateDisconnectAsync(arg.Player, TimeSpan.FromSeconds(timeout));
+                            return;
+                        }
+
+                        await CancelDisconnect(arg);
+                        await arg.Player.PlayAsync(track);
+                        await arg.Player.TextChannel.SendMessageAsync($"{arg.Reason} -> **{arg.Track.Title}**" + Environment.NewLine +
+                            $"Сейчас играет: **{track.Title}** <{track.Url}>");
+
+                        return;
+                    }
                     else
                     {
                         // Если в очереди больше нет треков
