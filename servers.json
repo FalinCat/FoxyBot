@@ -1,0 +1,56 @@
+[
+  {
+    "Host": "lavalink.devz.cloud",
+    "Port": "443",
+    "Password": "mathiscool",
+    "Secure": "true"
+  },
+  {
+    "Host": "lavalink2.devz.cloud",
+    "Port": "443",
+    "Password": "mathiscool",
+    "Secure": "true"
+  },
+  {
+    "Host": "lavalink.devin-dev.xyz",
+    "Port": "443",
+    "Password": "lava123",
+    "Secure": "true"
+  },
+  {
+    "Host": "lava.devin-dev.xyz",
+    "Port": "443",
+    "Password": "lava123",
+    "Secure": "true"
+  },
+  {
+    "Host": "disbotlistlavalink.ml",
+    "Port": "443",
+    "Password": "LAVA",
+    "Secure": "true"
+  },
+  {
+    "Host": "www.lavalink-priyam.ml",
+    "Port": "443",
+    "Password": "methisbigbrain",
+    "Secure": "true"
+  },
+  {
+    "Host": "lavalink-backup.ml",
+    "Port": "443",
+    "Password": "methisbigbrain",
+    "Secure": "true"
+  },
+  {
+    "Host": "lavalink-replit.rainandrewandre.repl.co",
+    "Port": "443",
+    "Password": "maybeiwasboring",
+    "Secure": "true"
+  },
+  {
+    "Host": "lavalinkrailway.herokuapp.com",
+    "Port": "443",
+    "Password": "youshallnotpass",
+    "Secure": "true"
+  }
+]

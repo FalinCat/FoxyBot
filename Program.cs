@@ -7,19 +7,46 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using Victoria;
 
 namespace FoxyBot
-{ 
+{
     public class Program
     {
         public Queue<string> queue = new Queue<string>();
+        static IHost? host;
+        static List<LavaServer> serverList = new();
+        public static string currentHost;
 
         public static async Task Main(string[] args)
         {
+            var json = File.ReadAllText("servers.json");
+            serverList = JsonConvert.DeserializeObject<List<LavaServer>>(json);
+            host = BuildHost(2);
+            currentHost = serverList[2].Host;
+
+            using (host)
+            {
+                try
+                {
+                    await host.RunAsync();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+            }
+        }
+
+        private static IHost BuildHost(int serverNumber)
+        {
+            var json = File.ReadAllText("servers.json");
+            serverList = JsonConvert.DeserializeObject<List<LavaServer>>(json);
+
             var builder = new HostBuilder()
                 .ConfigureAppConfiguration(x =>
                 {
@@ -28,7 +55,7 @@ namespace FoxyBot
                     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                     .AddEnvironmentVariables()
                     .Build();
-                    
+
                     x.AddConfiguration(configuration);
                 })
                 .ConfigureLogging(x =>
@@ -57,18 +84,11 @@ namespace FoxyBot
                 .ConfigureServices((context, services) =>
                 {
                     var lConf = new LavaConfig();
-                    //lConf.Hostname = "lavalink.devin-dev.xyz";
-                    lConf.Hostname = "lava.devin-dev.xyz";
-                    lConf.Port = 443;
-                    lConf.Authorization = "lava123";
-                    lConf.IsSsl = true;
+                    lConf.Hostname = serverList[serverNumber].Host;
+                    lConf.Port = serverList[serverNumber].Port;
+                    lConf.Authorization = serverList[serverNumber].Password;
+                    lConf.IsSsl = serverList[serverNumber].Secure;
 
-                    //lConf.Hostname = "lava.link";
-                    //lConf.Port = 80;
-                    //lConf.Authorization = "somepass";
-                    //lConf.ReconnectAttempts = 50;
-                    //lConf.EnableResume = true;
-                    //lConf.ReconnectDelay = TimeSpan.FromSeconds(5);
                     services
                     .AddHostedService<CommandHandler>()
                     .AddLavaNode(x =>
@@ -81,10 +101,26 @@ namespace FoxyBot
                 .UseConsoleLifetime();
 
 
-            var host = builder.Build();
+            return builder.Build();
+        }
+
+        public static async Task RestartHostWithNewLavaServer(ushort serverNumber) {
+
+            await host.StopAsync();
+            host = BuildHost(serverNumber);
+
+            currentHost = serverList[serverNumber].Host;
+
             using (host)
             {
-                await host.RunAsync();
+                try
+                {
+                    await host.RunAsync();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
             }
 
         }
