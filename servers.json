@@ -52,5 +52,35 @@
     "Port": "443",
     "Password": "youshallnotpass",
     "Secure": "true"
+  },
+  {
+    "Host": "lavalink.eu",
+    "Port": "2333",
+    "Password": "Raccoon",
+    "Secure": "false"
+  },
+  {
+    "Host": "lava.link",
+    "Port": "80",
+    "Password": "youshallnotpass",
+    "Secure": "false"
+  },
+  {
+    "Host": "lavalinkrailway.herokuapp.com",
+    "Port": "443",
+    "Password": "youshallnotpass",
+    "Secure": "false"
+  },
+  {
+    "Host": "linklava.cjstevenson.com",
+    "Port": "25503",
+    "Password": "lookbehindyou",
+    "Secure": "false"
+  },
+  {
+    "Host": "node1.cjstevenson.com",
+    "Port": "25600",
+    "Password": "lookbehindyou",
+    "Secure": "false"
   }
 ]
