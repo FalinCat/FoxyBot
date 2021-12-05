@@ -26,8 +26,8 @@ namespace FoxyBot
         {
             var json = File.ReadAllText("servers.json");
             serverList = JsonConvert.DeserializeObject<List<LavaServer>>(json);
-            host = BuildHost(2);
-            currentHost = serverList[2].Host;
+            host = BuildHost(0);
+            currentHost = serverList[0].Host;
 
             using (host)
             {
