@@ -48,6 +48,8 @@ q - посмотреть очередь
 np - что сейчас играет
 kick - пнуть бота нафиг из канала, также пнуть если он завис
 
+jam - по ссылке на ютубе включить плейлист (Джемы ютубовские)
+
 track - поиск треков для последующей генерации рандомного плейлиста. Нужно писать только название трека, без назввания артиста
 follow - добавить в очередь треки, похожие на выбранный
 Как пользоваться:
@@ -575,7 +577,19 @@ follow - добавить в очередь треки, похожие на вы
                 return;
             }
             var uri = new Uri(query);
-            var id = HttpUtility.ParseQueryString(uri.Query).Get("v");
+
+            string id = "";
+            if (uri.Host == "youtu.be")
+            {
+                id = query.Split('/').ToList().Last();
+            }
+            else
+            {
+                id = HttpUtility.ParseQueryString(uri.Query).Get("v");
+            }
+
+
+            
             var playlistUrl = $"https://www.youtube.com/watch?v={id}&list=RD{id}";
             await PlayPlaylistAsync(playlistUrl);
         }
