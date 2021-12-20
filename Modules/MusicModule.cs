@@ -500,7 +500,7 @@ follow - добавить в очередь треки, похожие на вы
                 await ReplyAsync("Нет так таких треков");
                 return;
             }
-            
+
             foreach (var message in messages)
             {
                 if (message.Content.Contains("Я нашел следующие треки:") && message.Author.Id == 887228176135249980)
@@ -552,7 +552,6 @@ follow - добавить в очередь треки, похожие на вы
                 }
             }
         }
-
 
 
         public static async Task<string> GetToken()
@@ -616,9 +615,6 @@ follow - добавить в очередь треки, похожие на вы
         }
 
 
-
-
-
         public static async Task<IRestResponse> SpotifySearchAsync(RestClient client, string search, string searchType)
         {
             var request = new RestRequest("v1/search/", Method.GET);
@@ -627,24 +623,6 @@ follow - добавить в очередь треки, похожие на вы
 
             return await client.ExecuteAsync(request);
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
         private async Task ReplyAsyncWithCheck(string message)
@@ -789,7 +767,7 @@ follow - добавить в очередь треки, похожие на вы
                     jokesList.Add("Человек, ");
                     break;
             }
-            if ((DateTime.Now.Month == 12 && DateTime.Now.Day == 31) || (DateTime.Now.Month == 1 && DateTime.Now.Day == 1 && DateTime.Now.Hour <= 6))
+            if ((DateTime.Now.Month == 12 && DateTime.Now.Day >= 24) || (DateTime.Now.Month == 1 && DateTime.Now.Day <= 8 && DateTime.Now.Hour <= 6))
             {
                 jokesList.Clear();
                 jokesList.Add("Сегодня все особенное! ");
