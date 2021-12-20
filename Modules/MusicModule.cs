@@ -581,6 +581,10 @@ follow - добавить в очередь треки, похожие на вы
             string id = "";
             if (uri.Host == "youtu.be")
             {
+                if (query.Contains("?list="))
+                {
+                    query = query.Substring(0, query.IndexOf('?'));
+                }
                 id = query.Split('/').ToList().Last();
             }
             else
