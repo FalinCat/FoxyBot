@@ -7,6 +7,12 @@ using System.Web;
 using Victoria;
 using Victoria.Enums;
 using Victoria.Responses.Search;
+using Newtonsoft.Json;
+using RestSharp;
+using RestSharp.Authenticators;
+using FoxyBot.Spotify;
+using FoxyBot.Spotify.Recomendations;
+using Microsoft.Extensions.Configuration;
 
 namespace FoxyBot.Modules
 {
@@ -41,6 +47,14 @@ search - s - поиск. После получения списка писать
 q - посмотреть очередь
 np - что сейчас играет
 kick - пнуть бота нафиг из канала, также пнуть если он завис
+
+track - поиск треков для последующей генерации рандомного плейлиста. Нужно писать только название трека, без назввания артиста
+follow - добавить в очередь треки, похожие на выбранный
+Как пользоваться:
+1) $track Never Gonna Give You Up (Official Music Video)
+Получаем выдачу из 20 элементов
+2) $follow 2
+Треки добавляются в очередь. Это занимает какое тов время (от 10 секунд обычно)
 
 Если бот внезапно лагает (запинается музыка), то скорее всего виноват музыкальный сервер. Поменять его можно командой $lava N где N - номер сервера
 Список доступных серверов можно посмотреть командой $lava
@@ -173,7 +187,7 @@ kick - пнуть бота нафиг из канала, также пнуть �
                 await ReplyAsyncWithCheck(exception.Message);
                 return;
             }
-            
+
             if (Uri.TryCreate(query, UriKind.Absolute, out Uri uri) && uri.Scheme == Uri.UriSchemeHttps)
             {
                 var id = HttpUtility.ParseQueryString(uri.Query).Get("v");
@@ -453,6 +467,185 @@ kick - пнуть бота нафиг из канала, также пнуть �
                 await ReplyAsyncWithCheck($"параметр надо ставить циферкой :) ");
             }
         }
+
+
+        [Command("track", RunMode = RunMode.Async)]
+        private async Task SpotifySearchAsync([Remainder] string query)
+        {
+
+
+
+            var sb = new StringBuilder();
+            sb.AppendLine("Я нашел следующие треки:");
+
+            SpotifySearchResponce json = await SpotifySearch(query, "track");
+
+            for (int i = 0; i < json.tracks.items.Count; i++)
+            {
+                if (json.tracks.items[i].artists.Count == 0) continue;
+                sb.AppendLine($"{i} - {json.tracks.items[i].artists.First().name} - {json.tracks.items[i].name} ||SpotifyID:{json.tracks.items[i].id}||");
+            }
+
+            await ReplyAsync(sb.ToString());
+        }
+
+        [Command("follow", RunMode = RunMode.Async)]
+        private async Task FollowTrack([Remainder] string query)
+        {
+            var messages = Context.Channel.GetCachedMessages(50);
+
+            if (!int.TryParse(query, out var id)) return;
+            if (id < 0 || id > 19)
+            {
+                await ReplyAsync("Нет так таких треков");
+                return;
+            }
+            
+            foreach (var message in messages)
+            {
+                if (message.Content.Contains("Я нашел следующие треки:") && message.Author.Id == 887228176135249980)
+                {
+
+
+                    await ReplyAsync("Добавляю треки в очередь...");
+
+                    var str = message.Content;
+                    var allLines = str.Split(Environment.NewLine).ToList();
+                    allLines.RemoveAt(0);
+
+                    var trackId = allLines[id].Substring(0, allLines[id].Length - 2).Split(':').ToList().Last();
+
+                    var listOfTracksSpotify = await SpotifySearchRecommendations(trackId);
+                    var listLavaTracks = new List<LavaTrack>();
+
+
+                    if (listOfTracksSpotify.Count > 0)
+                    {
+                        try
+                        {
+                            if (Context.User is not IVoiceState voiceState) return;
+                            await _lavaNode.JoinAsync(voiceState?.VoiceChannel, Context.Channel as ITextChannel);
+                        }
+                        catch (Exception exception)
+                        {
+                            await ReplyAsyncWithCheck(exception.Message);
+                            return;
+                        }
+
+                        var t = await SearchTrackString(listOfTracksSpotify[0]);
+                        await PlayMusicAsync(t);
+                        listOfTracksSpotify.RemoveAt(0);
+                        await Task.Delay(2000);
+                    }
+
+                    foreach (var track in listOfTracksSpotify)
+                    {
+                        var t = await SearchTrackString(track);
+                        //await Task.Delay(TimeSpan.FromSeconds(2));
+                        listLavaTracks.Add(t.First());
+                        //await PlayMusicAsync(t);
+                    }
+
+                    await PlayMusicAsync(listLavaTracks);
+
+                    break;
+                }
+            }
+        }
+
+
+
+        public static async Task<string> GetToken()
+        {
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .AddEnvironmentVariables()
+                .Build();
+
+            RestClient client = new RestClient("https://accounts.spotify.com/");
+            var client_id = configuration.GetValue<string>("client_id");
+            var client_secret = configuration.GetValue<string>("client_secret");
+
+            var request = new RestRequest("api/token", Method.POST);
+            request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
+            request.AddHeader("Authorization", "Basic " + Base64Encode($"{client_id}:{client_secret}"));
+            request.AddParameter("grant_type", "client_credentials");
+
+            var result = client.Execute(request);
+
+            return JsonConvert.DeserializeObject<Login>(result.Content).access_token;
+        }
+
+
+        public static async Task<List<string>> SpotifySearchRecommendations(string track_id)
+        {
+            var token = await GetToken();
+            RestClient client = new RestClient("https://api.spotify.com/");
+            client.Authenticator = new JwtAuthenticator(token);
+
+            var request = new RestRequest("v1/recommendations/", Method.GET);
+            request.AddParameter("seed_tracks", track_id);
+
+            var result = await client.ExecuteAsync(request);
+            var recommendations = JsonConvert.DeserializeObject<SpotifyRecommendation>(result.Content);
+
+            var list = new List<string>();
+
+            foreach (var item in recommendations.tracks)
+            {
+                list.Add(item.artists.First().name + " - " + item.name);
+            }
+
+
+            return list;
+        }
+
+
+        public static async Task<SpotifySearchResponce> SpotifySearch(string search, string searchType)
+        {
+            var token = await GetToken();
+
+            RestClient client = new RestClient("https://api.spotify.com/");
+            client.Authenticator = new JwtAuthenticator(token);
+
+            var result = await SpotifySearchAsync(client, search, searchType);
+
+            var obj = JsonConvert.DeserializeObject<SpotifySearchResponce>(result.Content);
+            return obj;
+        }
+
+
+
+
+
+        public static async Task<IRestResponse> SpotifySearchAsync(RestClient client, string search, string searchType)
+        {
+            var request = new RestRequest("v1/search/", Method.GET);
+            request.AddParameter("q", search);
+            request.AddParameter("type", searchType);
+
+            return await client.ExecuteAsync(request);
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         private async Task ReplyAsyncWithCheck(string message)
         {
@@ -986,6 +1179,12 @@ kick - пнуть бота нафиг из канала, также пнуть �
             }
 
             return true;
+        }
+
+        public static string Base64Encode(string plainText)
+        {
+            var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
+            return System.Convert.ToBase64String(plainTextBytes);
         }
     }
 }
