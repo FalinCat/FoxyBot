@@ -495,29 +495,28 @@ follow - добавить в очередь треки, похожие на вы
             var messages = Context.Channel.GetCachedMessages(50);
 
             if (!int.TryParse(query, out var id)) return;
-            if (id < 0 || id > 19)
-            {
-                await ReplyAsync("Нет так таких треков");
-                return;
-            }
+
 
             foreach (var message in messages)
             {
                 if (message.Content.Contains("Я нашел следующие треки:") && message.Author.Id == 887228176135249980)
                 {
-
-
                     await ReplyAsync("Добавляю треки в очередь...");
 
                     var str = message.Content;
                     var allLines = str.Split(Environment.NewLine).ToList();
                     allLines.RemoveAt(0);
 
+                    if (id < 0 || id > allLines.Count - 1)
+                    {
+                        await ReplyAsync("Нет там таких треков!");
+                        return;
+                    }
+
                     var trackId = allLines[id].Substring(0, allLines[id].Length - 2).Split(':').ToList().Last();
 
                     var listOfTracksSpotify = await SpotifySearchRecommendations(trackId);
                     var listLavaTracks = new List<LavaTrack>();
-
 
                     if (listOfTracksSpotify.Count > 0)
                     {
