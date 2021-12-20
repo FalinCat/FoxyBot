@@ -553,6 +553,34 @@ follow - добавить в очередь треки, похожие на вы
         }
 
 
+        [Command("jam", RunMode = RunMode.Async)]
+        private async Task JamAsync([Remainder] string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                await ReplyAsyncWithCheck("совершенно непонятный запрос");
+                return;
+            }
+
+            if (!CheckStateAsync(PlayerState.Playing).Result) return;
+
+            try
+            {
+                if (Context.User is not IVoiceState voiceState) return;
+                await _lavaNode.JoinAsync(voiceState?.VoiceChannel, Context.Channel as ITextChannel);
+            }
+            catch (Exception exception)
+            {
+                await ReplyAsyncWithCheck(exception.Message);
+                return;
+            }
+            var uri = new Uri(query);
+            var id = HttpUtility.ParseQueryString(uri.Query).Get("v");
+            var playlistUrl = $"https://www.youtube.com/watch?v={id}&list=RD{id}";
+            await PlayPlaylistAsync(playlistUrl);
+        }
+
+
         public static async Task<string> GetToken()
         {
             var configuration = new ConfigurationBuilder()
